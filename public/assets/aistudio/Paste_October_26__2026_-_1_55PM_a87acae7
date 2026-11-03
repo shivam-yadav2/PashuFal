@@ -1,0 +1,1598 @@
+# MASTER BUILD PROMPT — LIVESTOCK TRADING & DAIRY MANAGEMENT PLATFORM
+
+## PART 1 — YOUR ROLE
+
+Act as a principal software architect, senior product designer, senior React/TypeScript engineer, database designer, and QA engineer.
+
+Your task is to build a professional, maintainable, responsive web application for an established livestock-trading and dairy business based in Gorakhpur, Uttar Pradesh, India.
+
+Do not approach this as a generic dashboard project. Understand the actual business workflows, model them correctly, and then build the user interface around them.
+
+The business has two main operational activities:
+
+1. Buying and selling cows and buffaloes, including owned inventory and brokerage transactions.
+2. Dairy operations involving milk from the owner's animals, milk purchased from external farmers, milk collection, recurring customer supply, daily deliveries, sales and payments.
+
+The business has operated for more than 25 years. The website must communicate that experience while supporting future business growth.
+
+The intended users are:
+- Public visitors and prospective buyers.
+- Household milk customers and bulk dairy buyers.
+- The business owner, who has full administrative access.
+- A manager, who can perform day-to-day operations within assigned permissions.
+
+The initial product is a single-business platform, not a multi-tenant SaaS or public multi-vendor marketplace.
+
+Your priorities, in order, are:
+
+1. Correct business workflows.
+2. Data consistency and domain correctness.
+3. Usable, professional UI.
+4. Maintainable code.
+5. Responsive behavior and accessibility.
+6. Production integration readiness.
+
+Do not sacrifice correctness for visual appearance.
+
+---
+
+# PART 2 — REQUIRED WORKING METHOD
+
+Before making changes, inspect the existing project files and understand the available environment.
+
+If the project already contains useful components, routing, configuration or business logic, preserve and improve them rather than blindly replacing everything.
+
+If the project is empty, establish the structure specified below.
+
+Do not delete configuration files, overwrite working functionality, or introduce unnecessary dependencies without a clear reason.
+
+Work in small, verifiable phases. Keep the application runnable after each phase.
+
+Do not attempt to generate the entire application as one enormous component or one unstructured code dump.
+
+For each phase:
+
+1. State the phase objective.
+2. Identify the relevant files.
+3. Implement the phase.
+4. Run available checks or tests.
+5. Fix errors before continuing.
+6. Summarize what works and what remains incomplete.
+
+Do not claim that an API, database, authentication system, file upload, payment workflow or backup is production-ready unless it is actually implemented and verified.
+
+If a capability is not supported in the current environment, implement a clearly identified prototype alternative and document the production requirement.
+
+Do not stop after creating a design plan. Continue implementing the requested phase.
+
+---
+
+# PART 3 — TECHNOLOGY STACK AND LIBRARY RULES
+
+Use the following stack:
+
+- React
+- TypeScript with strict typing
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Lucide icons through lucide-react
+- React Router
+- React Hook Form
+- Zod
+- TanStack Table where complex data tables are useful
+- Recharts for charts that provide meaningful operational information
+
+Use the current compatible versions already present in the project whenever possible. Do not upgrade the entire dependency tree unnecessarily.
+
+## Strict UI library policy
+
+Use shadcn/ui as the only general-purpose component library.
+
+Prefer its components for:
+- Button
+- Input
+- Textarea
+- Select
+- Checkbox
+- Radio group
+- Switch
+- Dialog
+- Alert dialog
+- Dropdown menu
+- Popover
+- Calendar/date picker
+- Tabs
+- Table
+- Card
+- Badge
+- Tooltip
+- Sheet
+- Sidebar
+- Breadcrumb
+- Command
+- Form
+- Skeleton
+- Toast or Sonner
+- Pagination
+- Separator
+- Avatar
+- Alert
+- Progress
+- Chart containers when appropriate
+
+Use the installed shadcn/ui component conventions and official compatible dependencies.
+
+Do not add Material UI, Ant Design, Chakra UI, Mantine, Bootstrap, DaisyUI or another competing component library.
+
+Do not rebuild standard components from scratch when an appropriate shadcn/ui component exists.
+
+Custom components are allowed for domain-specific experiences such as animal cards, milk collection forms, delivery rows, stock reconciliation panels and financial summaries.
+
+Use Lucide icons consistently. Do not use emoji as interface icons.
+
+Use semantic HTML and accessible labels.
+
+---
+
+# PART 4 — PRODUCT AND BRAND IDENTITY
+
+Create a provisional brand identity:
+
+Brand name: [BRAND NAME]
+Owner name: [UNCLE NAME]
+Location: Gorakhpur, Uttar Pradesh, India
+Experience: 25+ years
+Currency: INR
+Primary language: English initially, with architecture suitable for adding Hindi later.
+
+All brand information must come from a centralized business configuration.
+
+Never scatter the owner name, telephone number, WhatsApp number, address, Instagram URL or business name across multiple unrelated components.
+
+Use placeholders for missing information.
+
+Do not invent:
+- Phone numbers.
+- WhatsApp numbers.
+- Instagram handles.
+- Street addresses.
+- Customer testimonials.
+- Certifications.
+- Veterinary approvals.
+- Milk quality guarantees.
+- Animal health claims.
+- Business statistics.
+- Delivery promises.
+
+Make it easy to replace the provisional identity with the actual business details later.
+
+Brand positioning:
+
+A trusted, experienced livestock and dairy business that helps buyers discover available animals and enables customers to enquire about regular milk supply.
+
+The owner's real experience is an important part of the brand. Show it without making unsupported claims.
+
+---
+
+# PART 5 — PRODUCT ARCHITECTURE
+
+Build one application with two connected experiences.
+
+## A. Public website
+
+Accessible without logging in.
+
+Responsibilities:
+- Business introduction.
+- Livestock catalogue.
+- Individual animal listings.
+- Dairy business information.
+- Contact details.
+- WhatsApp and phone enquiry actions.
+- About and service-area information.
+
+## B. Private admin application
+
+Accessible through an admin login experience.
+
+Responsibilities:
+- Livestock inventory management.
+- Livestock sales and brokerage records.
+- Milk production records.
+- Milk collection from suppliers.
+- Milk stock reconciliation.
+- Customers and suppliers.
+- Recurring milk subscriptions.
+- Daily delivery management.
+- Dairy sales.
+- Customer receipts and supplier payments.
+- Enquiry management.
+- Reports.
+- User administration.
+- Audit history and settings.
+
+## C. Shared infrastructure
+
+Share:
+- User and role concepts.
+- Contact directory.
+- Business settings.
+- Media management interfaces.
+- Audit events.
+- Notification interfaces.
+- Formatting utilities.
+- Common design system.
+
+Do not combine unrelated business records into one generic entity with dozens of optional fields.
+
+Keep livestock and dairy domain logic separate.
+
+---
+
+# PART 6 — VISUAL DESIGN SYSTEM
+
+Create a consistent, professional visual system before implementing the individual pages.
+
+## Design direction
+
+The product should feel trustworthy, modern, practical and suitable for a real Indian livestock and dairy business.
+
+Avoid generic SaaS templates, excessive gradients, glassmorphism, oversized decorative typography, neon colors and unnecessary animation.
+
+Use:
+- Warm off-white or neutral page backgrounds.
+- Deep forest green as the main brand color.
+- White or neutral cards.
+- Restrained earthy accents.
+- Clear typography.
+- Consistent spacing.
+- Subtle borders and shadows.
+- Compact, information-rich administrative layouts.
+- Large, clear imagery on public animal listings.
+- Strong contrast for important actions and status labels.
+
+Define centralized design tokens for:
+- Colors.
+- Typography.
+- Spacing.
+- Border radii.
+- Shadows.
+- Layout widths.
+- Breakpoints.
+- Focus states.
+- Status colors.
+
+Do not hardcode slightly different versions of the same color in every component.
+
+Use design tokens and consistent component variants.
+
+## Typography
+
+Establish a readable type scale for:
+- Page titles.
+- Section headings.
+- Card headings.
+- Body text.
+- Secondary information.
+- Table text.
+- Form labels.
+- Helper text.
+- Financial values.
+
+Use tabular number styling where appropriate for prices, balances and quantities.
+
+## Layout
+
+Public pages:
+- Wide, image-led sections.
+- Clear navigation.
+- Strong primary CTA.
+- Consistent page widths.
+- Responsive cards and grids.
+- Mobile-first layouts.
+
+Admin pages:
+- Sidebar navigation on desktop.
+- Collapsible navigation on smaller screens.
+- Breadcrumbs.
+- Page title and description.
+- Primary action aligned consistently.
+- Search and filters.
+- Tables with clear density and spacing.
+- Responsive dialogs or sheets.
+- Useful empty states.
+
+## Responsive behavior
+
+Support:
+- Small mobile screens.
+- Larger mobile screens.
+- Tablets.
+- Desktop.
+- Wide desktop screens.
+
+Never require horizontal scrolling for ordinary mobile forms.
+
+Transform dense tables into appropriate responsive layouts when needed.
+
+Ensure dialogs remain usable on small screens.
+
+## Interaction quality
+
+Every important action must provide feedback.
+
+Implement:
+- Loading states.
+- Disabled states.
+- Success feedback.
+- Validation errors.
+- Confirmation dialogs.
+- Empty states.
+- Search result states.
+- Error states.
+- Unsaved-change protection where appropriate.
+
+Avoid dead buttons, decorative controls that do nothing and placeholder actions presented as functional.
+
+---
+
+# PART 7 — ROUTES AND INFORMATION ARCHITECTURE
+
+Implement these public routes:
+
+/
+ /animals
+ /animals/:id
+ /dairy
+ /about
+ /contact
+
+Implement these admin routes:
+
+/admin/login
+/admin/dashboard
+/admin/livestock
+/admin/livestock/new
+/admin/livestock/:id
+/admin/livestock/transactions
+/admin/dairy/overview
+/admin/dairy/production
+/admin/dairy/collection
+/admin/dairy/inventory
+/admin/dairy/customers
+/admin/dairy/suppliers
+/admin/dairy/subscriptions
+/admin/dairy/deliveries
+/admin/dairy/sales
+/admin/dairy/payments
+/admin/enquiries
+/admin/reports
+/admin/activity
+/admin/settings
+/admin/users
+
+Use clear, consistent navigation labels.
+
+Protect admin routes at the UI level in the prototype.
+
+Handle:
+- Unknown routes.
+- Unauthorized UI access.
+- Missing records.
+- Invalid route parameters.
+- Loading states.
+- Empty results.
+
+Do not render the public website inside the admin layout or vice versa.
+
+---
+
+# PART 8 — PUBLIC WEBSITE SPECIFICATION
+
+## 8.1 Homepage
+
+Create the homepage in this order:
+
+1. Header.
+2. Hero section.
+3. Primary business services.
+4. Featured animals.
+5. Experience and business story.
+6. How livestock buying works.
+7. Dairy service introduction.
+8. Service-area information.
+9. Contact CTA.
+10. Footer.
+
+### Header
+
+Include:
+- Brand logo or wordmark.
+- Home.
+- Animals.
+- Dairy.
+- About.
+- Contact.
+- Primary WhatsApp or contact CTA.
+
+Use a responsive mobile menu.
+
+### Hero section
+
+Create an image-led hero with:
+- A clear headline.
+- Short supporting text.
+- Experience statement.
+- Primary CTA to browse animals.
+- Secondary CTA to contact the business.
+- Genuine business photography when available.
+
+Use provisional copy, not invented customer claims.
+
+### Services
+
+Create two distinct service cards.
+
+Livestock Trading:
+- Cows.
+- Buffaloes.
+- Available inventory.
+- Animal inspection and direct enquiry.
+
+Dairy Business:
+- Milk supply.
+- Regular customer enquiries.
+- Business contact information.
+
+Do not imply that all services are available in every region.
+
+### Featured animals
+
+Show a small set of currently available animals from the shared listing data.
+
+Each card must display:
+- Main photo.
+- Animal ID.
+- Species.
+- Breed.
+- Age when known.
+- Reported milk yield when available.
+- Indicative price range.
+- Availability.
+- View details action.
+
+Do not display sold animals in the available inventory section.
+
+### Business story
+
+Show:
+- Owner introduction.
+- More than 25 years of experience.
+- Gorakhpur location.
+- Business values.
+- A real photograph placeholder.
+
+Do not invent the owner's personal story or customer testimonials.
+
+### Footer
+
+Include:
+- Business identity.
+- Navigation.
+- Contact placeholders.
+- WhatsApp.
+- Instagram.
+- Service area.
+- Privacy policy.
+- Relevant business information.
+
+---
+
+# PART 9 — LIVESTOCK CATALOGUE
+
+Create a complete public animal catalogue.
+
+## Search and filtering
+
+Support:
+- Species: cow or buffalo.
+- Breed.
+- Minimum and maximum indicative price.
+- Availability.
+- Age where appropriate.
+- Reported milk yield where supplied.
+- Sort by recently updated, price or other meaningful criteria.
+
+Allow filters to be combined.
+
+Provide:
+- Search input.
+- Filter controls.
+- Clear filters action.
+- Result count.
+- Empty state.
+- Pagination or incremental loading.
+- Mobile filter sheet.
+
+Do not build filters that do not affect results.
+
+## Animal domain model
+
+Define strongly typed models for:
+
+Animal:
+- id
+- species
+- breed
+- gender
+- ageValue
+- ageUnit
+- lactationNumber
+- calvingDetails
+- pregnancyStatus
+- reportedMilkYield
+- milkYieldUnit
+- ownershipType
+- sellerContactId when applicable
+- internalNotes
+- createdAt
+- updatedAt
+
+AnimalListing:
+- id
+- animalId
+- title
+- description
+- priceMin
+- priceMax
+- currency
+- status
+- location
+- publishedAt
+- lastVerifiedAt
+- createdBy
+- updatedBy
+- version
+
+AnimalMedia:
+- id
+- animalId
+- mediaType
+- url or storage key
+- displayOrder
+- altText
+
+Use appropriate nullability for unknown values.
+
+Do not fabricate missing values.
+
+The `version` or equivalent concurrency token is a prototype domain field for future conflict detection.
+
+## Listing status lifecycle
+
+Use:
+
+DRAFT
+AVAILABLE
+RESERVED
+SOLD
+ARCHIVED
+
+Implement valid transitions.
+
+Examples:
+- Draft to available after required fields are completed.
+- Available to reserved when a reservation is recorded.
+- Reserved to available only after explicit cancellation or release.
+- Reserved to sold when the sale is completed.
+- Available to sold for a direct completed sale.
+- Sold to archived for historical organization.
+
+Never silently restore a sold animal to available status.
+
+Keep listing status distinct from transaction payment status.
+
+## Animal detail page
+
+Show:
+- Image gallery.
+- Species and breed.
+- Animal ID.
+- Age and gender when known.
+- Lactation and calving information when relevant.
+- Reported milk yield with context.
+- Indicative price range.
+- Availability.
+- Last verified date.
+- Location.
+- Description.
+- Related animals.
+- WhatsApp enquiry action.
+- Phone CTA.
+
+Use missing-information labels such as "Not provided" or omit nonessential fields. Never fill missing fields with invented specifications.
+
+## WhatsApp enquiry
+
+Generate the message from the actual listing data.
+
+Include:
+- Animal ID.
+- Animal description.
+- Listing URL.
+- Buyer's enquiry question.
+
+Use a centralized contact configuration.
+
+Do not hardcode a fake phone number.
+
+If the actual WhatsApp number has not been configured, disable the external action and show a clear configuration message in development.
+
+---
+
+# PART 10 — LIVESTOCK ADMIN WORKFLOW
+
+Implement:
+
+1. Inventory overview.
+2. Add-animal form.
+3. Edit-animal form.
+4. Photo management.
+5. Preview listing.
+6. Publish listing.
+7. Update price range.
+8. Reserve animal.
+9. Release reservation.
+10. Record completed sale.
+11. Mark sold.
+12. Archive record.
+13. Search and filter inventory.
+14. Inspect transaction history.
+
+## Form validation
+
+Require:
+- Species.
+- Breed or an explicit unknown value.
+- Valid ownership type.
+- Valid listing status.
+- A valid indicative price range for publishable listings.
+- At least one photo for publication.
+- Relevant description and location fields according to the configured business rules.
+
+Validate that:
+- Minimum price is not greater than maximum price.
+- Prices are nonnegative.
+- Required IDs are unique.
+- Status transitions are valid.
+- Sold listings are not publicly available.
+- Edits do not overwrite newer changes silently.
+
+Do not require optional information such as lactation number for animals where it is not applicable.
+
+## Livestock transaction model
+
+Record:
+- Transaction ID.
+- Animal/listing reference.
+- Buyer contact.
+- Agreed sale price.
+- Sale date.
+- Transaction status.
+- Amount paid.
+- Outstanding amount.
+- Payment records.
+- Notes.
+- Created by.
+
+If brokerage is involved, record:
+- Brokerage ownership type.
+- Seller contact.
+- Agreed commission basis.
+- Commission amount.
+- Commission settlement status.
+
+Do not assume every listed animal is owned by the business.
+
+---
+
+# PART 11 — SHARED CONTACT DIRECTORY
+
+Create shared contact records that can be associated with multiple business roles.
+
+Contact fields:
+- id
+- name
+- phone
+- WhatsApp number when different
+- location
+- contact roles
+- active status
+- notes
+- createdAt
+- updatedAt
+
+Roles may include:
+- Livestock buyer.
+- Livestock seller.
+- Dairy customer.
+- Milk supplier.
+- Bulk buyer.
+
+Do not create a new contact automatically every time a person appears in another workflow.
+
+Use phone numbers or explicit user confirmation to help identify possible duplicates. Never merge records silently.
+
+Keep private notes out of public API responses and public UI.
+
+---
+
+# PART 12 — DAIRY DOMAIN MODEL
+
+Create a dedicated dairy module with its own domain logic.
+
+Use separate entities for:
+
+- MilkProduct.
+- MilkProductionEntry.
+- MilkCollectionEntry.
+- MilkInventoryMovement.
+- DairyPriceRule.
+- DeliverySubscription.
+- DeliveryRun.
+- MilkDelivery.
+- DairySale.
+- DairyPayment.
+- PaymentAllocation.
+- Invoice or billing statement where needed.
+
+Do not model the dairy operation as a list of generic products and orders.
+
+## Units and numeric precision
+
+Use litres as the default milk quantity unit.
+
+Represent quantities and rates with explicitly defined decimal precision.
+
+Do not use JavaScript floating-point arithmetic as the authoritative method for money calculations.
+
+For the prototype, implement safe decimal arithmetic using integer minor units or a suitable decimal abstraction. Document the production database precision.
+
+Format displayed amounts in INR.
+
+Never silently round quantities or money in ways that change the business meaning.
+
+---
+
+# PART 13 — OWN MILK PRODUCTION
+
+Create a production-entry form.
+
+Fields:
+- Production entry ID.
+- Business date.
+- Session or shift if applicable.
+- Herd or source group when known.
+- Actual quantity produced.
+- Unit.
+- Recorded by.
+- Notes.
+
+Support create, edit and view operations in the prototype.
+
+When a production entry is accepted, create a corresponding stock movement in the mock ledger.
+
+Do not count the same production entry twice.
+
+If an accepted entry is corrected, reconcile the original movement and the correction. Do not simply add the corrected quantity on top of the original quantity.
+
+---
+
+# PART 14 — FARMER MILK COLLECTION
+
+Create a collection register for purchased milk.
+
+Fields:
+- Collection ID.
+- Supplier.
+- Date and time.
+- Actual quantity received.
+- Accepted quantity.
+- Purchase rate per litre.
+- Total purchase cost.
+- Optional fat/SNF measurements.
+- Quality notes.
+- Payment status.
+- Recorded by.
+- Notes.
+
+Calculate the purchase amount from the accepted quantity and the applicable rate.
+
+Separate:
+- Milk physically received.
+- Milk accepted into saleable stock.
+- Milk rejected.
+- Financial amount owed.
+
+A rejected quantity must not automatically increase saleable stock.
+
+If a collection entry is edited after stock or payment records have been generated, apply a controlled correction process.
+
+Do not silently rewrite historical payment allocations.
+
+---
+
+# PART 15 — MILK INVENTORY AND RECONCILIATION
+
+Implement a stock-movement ledger.
+
+Movement types may include:
+- Opening balance.
+- Own production.
+- Purchased milk accepted.
+- Sale.
+- Waste.
+- Rejected or damaged stock.
+- Eligible return.
+- Authorized adjustment.
+- Other outflow.
+
+Every movement should include:
+- Unique ID.
+- Business date.
+- Quantity.
+- Unit.
+- Movement type.
+- Source record.
+- Created by.
+- Notes.
+- Correction or reversal reference where relevant.
+
+Use signed quantities consistently or store direction explicitly. Document the chosen convention.
+
+Stock formula:
+
+Available stock = opening stock + production + accepted purchases + eligible returns + approved inflows.
+
+Closing stock = available stock - sales - waste - other outflows.
+
+Display:
+- Opening stock.
+- Production.
+- Purchased quantity.
+- Available quantity.
+- Sold quantity.
+- Waste.
+- Other outflows.
+- Closing stock.
+- Physical count.
+- Difference between calculated and physical stock.
+
+Prevent duplicate posting of the same source transaction.
+
+Do not allow an ordinary UI edit to erase or duplicate a stock movement.
+
+If stock becomes insufficient:
+- Block the operation or require explicit authorized resolution.
+- Show the shortage.
+- Identify which operation caused it.
+- Do not silently create negative stock.
+
+Treat a return as saleable only when explicitly approved under the configured return policy.
+
+Keep the prototype stock ledger separate from a future batch-traceability system. Do not claim full batch traceability unless lot tracking is actually implemented.
+
+---
+
+# PART 16 — DAIRY PRODUCTS AND PRICE RULES
+
+Allow configuration of the actual milk products sold.
+
+Fields:
+- Product ID.
+- Name.
+- Description.
+- Unit.
+- Active status.
+- Optional product-specific notes.
+
+Do not invent products that the business does not sell.
+
+Price rules may be associated with:
+- Product.
+- Supplier.
+- Customer or customer category.
+- Effective start date.
+- Optional end date.
+- Purchase or selling direction.
+- Rate.
+- Unit.
+
+Select the applicable rate using a documented rule.
+
+When no matching rate exists, request an explicit rate rather than silently using zero or an arbitrary default.
+
+A historical transaction must retain its applied rate even when a new rate becomes effective.
+
+---
+
+# PART 17 — RECURRING MILK SUBSCRIPTIONS
+
+Create a customer subscription management workflow.
+
+Subscription fields:
+- Subscription ID.
+- Customer.
+- Product.
+- Quantity per delivery.
+- Unit.
+- Schedule.
+- Effective start date.
+- Optional end date.
+- Price or pricing rule.
+- Billing preference.
+- Delivery instructions.
+- Status.
+- Created by.
+- Updated by.
+
+Statuses:
+- ACTIVE.
+- PAUSED.
+- ENDED.
+
+Support:
+- Create subscription.
+- Edit future terms.
+- Pause.
+- Resume.
+- End.
+- View delivery history.
+- Change quantity effective on a specified date.
+- Skip a specific delivery.
+- Record one-off exceptions.
+
+Do not retroactively change previously completed deliveries when a subscription changes.
+
+Generate a daily delivery list from active subscriptions.
+
+Generation must be idempotent: running it twice for the same date must not create duplicate delivery records.
+
+Define uniqueness using the subscription and business date or an equivalent stable key.
+
+Support business-local dates rather than relying on the browser's timezone.
+
+A paused or ended subscription must not generate future deliveries outside its valid dates.
+
+---
+
+# PART 18 — DAILY DELIVERY MANAGEMENT
+
+Create a practical daily delivery workspace.
+
+Show:
+- Business date.
+- Customer.
+- Phone.
+- Product.
+- Scheduled quantity.
+- Actual delivered quantity.
+- Delivery status.
+- Optional assigned worker.
+- Notes.
+
+Statuses:
+- PLANNED.
+- PREPARED.
+- DISPATCHED.
+- DELIVERED.
+- PARTIALLY_DELIVERED.
+- SKIPPED.
+- FAILED.
+
+Provide:
+- Daily delivery list.
+- Search.
+- Status filters.
+- Customer filters.
+- Quick status actions.
+- Delivery detail drawer.
+- Reason for failed or skipped delivery.
+- Actual quantity entry.
+- Daily completion summary.
+
+Never assume the scheduled quantity was actually delivered.
+
+Billing and stock movement must use the correct actual quantities and configured business policy.
+
+Define when milk leaves available stock, such as at dispatch or confirmed delivery. Use one documented policy consistently and support reconciliation for failed deliveries.
+
+Do not count the same delivery as a stock outflow more than once.
+
+---
+
+# PART 19 — DAIRY SALES AND BILLING
+
+Support:
+1. Recurring household milk deliveries.
+2. One-off household sales.
+3. Bulk sales to shops, vendors or businesses.
+
+DairySale fields:
+- Sale ID.
+- Customer.
+- Product.
+- Quantity.
+- Unit.
+- Applied rate.
+- Total amount.
+- Sale date.
+- Source delivery or order.
+- Billing status.
+- Notes.
+
+Do not create a second independent sale for a delivery if that delivery already generates its sale record. Define a single source of truth for billed quantities.
+
+Allow daily or monthly billing views based on the business's chosen policy.
+
+Preserve:
+- Transaction date.
+- Service/delivery date.
+- Invoice date.
+- Payment date.
+
+These dates are not interchangeable.
+
+Do not label sales revenue as profit.
+
+---
+
+# PART 20 — PAYMENTS AND FINANCIAL LEDGER
+
+Support:
+- Customer receipts.
+- Supplier payments.
+- Partial payments.
+- Multiple payments against one invoice.
+- One payment allocated to multiple invoices.
+- Unallocated payments.
+- Payment corrections.
+- Reversals with audit history.
+
+Payment fields:
+- Payment ID.
+- Direction.
+- Contact.
+- Amount.
+- Currency.
+- Payment method.
+- Transaction date.
+- Reference number where relevant.
+- Allocation records.
+- Created by.
+- Notes.
+
+Payment methods may include:
+- Cash.
+- UPI.
+- Bank transfer.
+- Other configured methods.
+
+Do not store bank credentials or payment secrets.
+
+Customer outstanding:
+
+Charges - allocated receipts - credits.
+
+Supplier payable:
+
+Purchase costs - allocated supplier payments - credits.
+
+Use an allocation model rather than storing a single mutable paidAmount field as the only source of truth.
+
+The prototype may calculate balances from mock records, but its design must allow the production backend to enforce transactional consistency.
+
+Never hard-delete a posted financial event.
+
+Corrections must be represented by a controlled reversal or adjustment.
+
+---
+
+# PART 21 — DASHBOARD
+
+Build an operational dashboard with a date selector and consistent data.
+
+Livestock metrics:
+- Available animals.
+- Reserved animals.
+- Recently sold animals.
+- New enquiries.
+
+Dairy metrics:
+- Own production today.
+- Purchased milk accepted today.
+- Total milk available.
+- Milk sold.
+- Waste.
+- Closing stock.
+- Scheduled deliveries.
+- Completed deliveries.
+- Partial deliveries.
+- Failed deliveries.
+- Customer outstanding.
+- Supplier payable.
+
+Additional sections:
+- Daily stock reconciliation.
+- Recent activity.
+- Recent animal enquiries.
+- Deliveries requiring attention.
+- Low-stock warning.
+- Outdated animal listings.
+- Recent payments.
+
+Every displayed metric must derive from the underlying mock records through reusable calculation functions.
+
+Do not hardcode unrelated numbers in dashboard cards.
+
+Use charts only when they communicate useful trends, such as:
+- Milk inflow versus outflow.
+- Delivery completion.
+- Sales over time.
+
+Avoid decorative charts with arbitrary values.
+
+Clearly distinguish:
+- Sales revenue.
+- Cash received.
+- Supplier costs.
+- Outstanding receivables.
+- Outstanding payables.
+- Estimated operating margin, if supported by the available data.
+
+Do not imply that revenue equals profit.
+
+---
+
+# PART 22 — USERS, PERMISSIONS AND AUDIT HISTORY
+
+Create two demo roles.
+
+OWNER:
+- Full business administration.
+- User management.
+- Role assignments.
+- Business settings.
+- Full livestock and dairy access.
+- Financial records.
+- Reports.
+- Audit history.
+
+MANAGER:
+- Day-to-day inventory and dairy operations.
+- Customer and supplier management.
+- Delivery and payment entry according to configured permissions.
+- Operational reports.
+- No user-role administration.
+- No access to restricted settings.
+
+Keep permissions centralized and declarative.
+
+Every sensitive prototype mutation should record:
+- Actor.
+- Action.
+- Entity type.
+- Entity ID.
+- Timestamp.
+- Relevant before/after values where appropriate.
+
+Record important events:
+- Listing publication.
+- Price changes.
+- Reservations.
+- Sales.
+- Milk collection edits.
+- Stock adjustments.
+- Delivery completion.
+- Payment posting.
+- Payment reversal.
+- Permission changes.
+
+Do not place sensitive personal information or full payment details in logs unnecessarily.
+
+Explain clearly that client-side permissions are not a security boundary. Production APIs must independently enforce every permission.
+
+---
+
+# PART 23 — MOCK DATA AND SERVICE LAYER
+
+Build a realistic but clearly fictional dataset.
+
+Include:
+- Multiple cows.
+- Multiple buffaloes.
+- Available, reserved, sold and archived listings.
+- Owned and brokerage listings.
+- Household milk customers.
+- Bulk customers.
+- Milk suppliers.
+- Own production entries.
+- Farmer collection entries.
+- Multiple milk products only when useful to demonstrate configuration.
+- Active, paused and ended subscriptions.
+- Completed, partial, skipped and failed deliveries.
+- Sales.
+- Partial and full payments.
+- Outstanding customer balances.
+- Supplier payables.
+- Audit events.
+
+Keep sample values consistent across the application.
+
+Do not use a fake phone number as a real WhatsApp destination.
+
+Create service interfaces for:
+- Authentication.
+- Livestock.
+- Dairy production.
+- Milk collection.
+- Inventory.
+- Contacts.
+- Subscriptions.
+- Deliveries.
+- Sales.
+- Payments.
+- Reports.
+- Audit logs.
+
+Use mock service implementations during prototyping.
+
+Do not put domain calculations directly into visual components.
+
+Do not use browser localStorage as the authoritative production database.
+
+If browser persistence is used to make the demo more useful, label it as prototype persistence and keep it behind the mock repository boundary.
+
+---
+
+# PART 24 — RECOMMENDED FILE STRUCTURE
+
+Use a modular structure similar to:
+
+src/
+  app/
+    App.tsx
+    router.tsx
+    providers.tsx
+  components/
+    ui/
+    layout/
+    shared/
+  modules/
+    public/
+    auth/
+    dashboard/
+    livestock/
+      components/
+      pages/
+      forms/
+      services/
+      types/
+    dairy/
+      production/
+      collection/
+      inventory/
+      customers/
+      suppliers/
+      subscriptions/
+      deliveries/
+      sales/
+      payments/
+      services/
+      types/
+    enquiries/
+    reports/
+    activity/
+    settings/
+    users/
+  domain/
+    livestock/
+    dairy/
+    finance/
+    contacts/
+  services/
+    api/
+    mock/
+  lib/
+    currency.ts
+    dates.ts
+    validation.ts
+    permissions.ts
+  config/
+    business.ts
+  test/
+  types/
+
+Adjust the structure to the actual project if necessary, but maintain clear boundaries.
+
+Do not create one massive App.tsx file.
+
+Do not duplicate the same business logic across forms, cards and tables.
+
+Use shared hooks and services only where they have clear responsibilities.
+
+---
+
+# PART 25 — PRODUCTION INTEGRATION REQUIREMENTS
+
+The prototype is intended to be continued in VS Code.
+
+Prepare for the following future architecture:
+
+- One repository.
+- React/Vite frontend.
+- Node.js/Express backend.
+- Express API under /api/*.
+- React production build served by Express.
+- Vite middleware mode for the combined development server if adopted.
+- MySQL database.
+- Persistent media storage.
+- Environment-based configuration.
+- Centralized request validation.
+- Server-side authentication and authorization.
+- Database transactions for stock and payment operations.
+- Audit history.
+- Logging.
+- Backups and tested restoration.
+- Automated tests.
+
+Do not implement a fake database adapter that claims to persist data to MySQL.
+
+Do not add a production Express server unless explicitly requested for the current implementation phase.
+
+Instead, isolate API clients and define typed request/response contracts so the real backend can be added later.
+
+Avoid coupling the UI directly to mock storage.
+
+Public responses must not expose:
+- Internal notes.
+- Supplier purchase rates.
+- Customer account balances.
+- Private contact records.
+- User credentials.
+- Audit information.
+
+---
+
+# PART 26 — VALIDATION AND EDGE CASES
+
+Explicitly implement and test the following behaviors:
+
+1. Sold listings cannot appear as available.
+2. Reservation cancellation requires an explicit status transition.
+3. Concurrent edits must not silently overwrite newer values.
+4. Missing optional animal information must not create fake values.
+5. Price ranges must be valid and nonnegative.
+6. Milk production must not be posted twice.
+7. Collection quantities must distinguish received, accepted and rejected milk.
+8. Corrections must not duplicate stock movements.
+9. Daily subscription generation must be idempotent.
+10. Paused subscriptions must not generate future deliveries.
+11. Historical delivery records must not change after future subscription edits.
+12. Actual delivery quantities must be recorded independently of scheduled quantities.
+13. Stock shortages must be visible.
+14. Negative stock must be prevented or explicitly resolved by authorized staff.
+15. Duplicate stock movements must be prevented.
+16. Customer payments must not be counted twice.
+17. Supplier payments must not be confused with customer receipts.
+18. Partial payments must preserve outstanding balances.
+19. Historical rates must remain unchanged for existing transactions.
+20. Payment reversals must preserve audit history.
+21. Invalid routes must show a useful error page.
+22. Restricted actions must be hidden or disabled appropriately in the prototype.
+23. Public pages must not expose private operational information.
+24. Failed form submissions must preserve useful user input where safe.
+25. Empty states must provide a meaningful next action.
+26. Missing or broken media must not break the layout.
+27. All major workflows must work at mobile widths.
+28. Date calculations must use the configured business timezone.
+29. Dashboard totals must reconcile with source records.
+30. Failed mock operations must provide visible error feedback.
+
+---
+
+# PART 27 — TESTING REQUIREMENTS
+
+Add tests for important pure domain functions where the environment supports tests.
+
+Prioritize:
+- Price-range validation.
+- Animal status transitions.
+- Milk stock calculation.
+- Duplicate movement prevention.
+- Subscription delivery generation.
+- Delivery quantity billing.
+- Payment allocations.
+- Customer outstanding calculation.
+- Supplier payable calculation.
+- Dashboard aggregation.
+
+Use deterministic sample data.
+
+Do not use arbitrary random data for tests.
+
+For every major workflow, verify:
+- Initial state.
+- Successful action.
+- Invalid action.
+- Resulting data.
+- Error behavior.
+
+Do not claim tests passed unless they were actually run.
+
+---
+
+# PART 28 — IMPLEMENTATION PHASES
+
+Follow this exact sequence.
+
+PHASE 0 — PROJECT INSPECTION AND FOUNDATION
+- Inspect repository.
+- Identify existing dependencies.
+- Establish design tokens.
+- Configure routing.
+- Create shared layouts.
+- Define domain types.
+- Create business configuration.
+- Set up mock-data and service boundaries.
+
+PHASE 1 — PUBLIC WEBSITE
+- Homepage.
+- About.
+- Contact.
+- Dairy landing page.
+- Animal catalogue.
+- Filters.
+- Animal detail.
+- Responsive navigation.
+- WhatsApp and call action interfaces.
+
+PHASE 2 — ADMIN SHELL
+- Login demo.
+- Owner and manager demo roles.
+- Sidebar.
+- Breadcrumbs.
+- Page headers.
+- Dashboard layout.
+- Protected prototype routes.
+- Role-aware navigation.
+
+PHASE 3 — LIVESTOCK MANAGEMENT
+- Inventory list.
+- Search and filters.
+- Create and edit forms.
+- Photo management.
+- Listing preview.
+- Publication.
+- Reservation.
+- Sale recording.
+- Archive.
+- Audit events.
+
+PHASE 4 — DAIRY FOUNDATION
+- Shared contacts.
+- Customers.
+- Suppliers.
+- Products and pricing.
+- Own production entries.
+- Farmer milk collection.
+- Stock-movement ledger.
+- Daily reconciliation.
+
+PHASE 5 — RECURRING OPERATIONS
+- Subscriptions.
+- Pause and resume.
+- Effective-dated changes.
+- Idempotent daily delivery generation.
+- Delivery status workflow.
+- Partial delivery.
+- Failed delivery and skip reasons.
+
+PHASE 6 — SALES AND PAYMENTS
+- Household and bulk sales.
+- Billing views.
+- Customer receipts.
+- Supplier payments.
+- Payment allocations.
+- Outstanding balances.
+- Reversals and corrections.
+
+PHASE 7 — REPORTING
+- Operational dashboard.
+- Stock reports.
+- Delivery reports.
+- Livestock sales reports.
+- Customer receivables.
+- Supplier payables.
+- Audit history.
+
+PHASE 8 — QUALITY REVIEW
+- Route testing.
+- Form validation.
+- Responsive testing.
+- Accessibility review.
+- Domain calculation tests.
+- Data consistency checks.
+- Dead-button inspection.
+- Error-state review.
+- Production integration documentation.
+
+Do not implement later phases prematurely if they depend on missing domain foundations.
+
+---
+
+# PART 29 — ACCEPTANCE CRITERIA
+
+The prototype is complete only when all of the following are verified:
+
+PUBLIC:
+- Visitors can browse animals.
+- Filters actually change the results.
+- Individual animal pages show correct details.
+- Sold animals do not appear as available.
+- Contact actions use configured contact information.
+- The dairy page explains the configured services.
+- Mobile layouts are usable.
+
+LIVESTOCK:
+- Owner and manager can use the prototype according to their roles.
+- Listings can be created and edited.
+- Valid status transitions work.
+- Sales preserve transaction history.
+- Price changes do not rewrite past transactions.
+
+DAIRY:
+- Own production updates the stock ledger.
+- Accepted milk purchases update stock and supplier obligations.
+- Rejected milk does not increase saleable stock.
+- Daily subscriptions generate the correct delivery list.
+- Repeated generation does not duplicate deliveries.
+- Partial and failed deliveries are handled correctly.
+- Actual delivered quantities are used for sales calculations.
+- Stock reconciliation agrees with the underlying movements.
+- Customer and supplier balances are calculated correctly.
+- Partial payments work.
+- Reversals preserve history.
+
+QUALITY:
+- Dashboard metrics derive from consistent source data.
+- All major buttons have real prototype behavior.
+- Errors and empty states are useful.
+- Mobile and desktop layouts work.
+- No unsupported business claims are presented.
+- Mock functionality is clearly documented.
+- The code is modular and maintainable.
+
+---
+
+# PART 30 — START NOW
+
+Begin with PHASE 0.
+
+Inspect the current project, explain the existing structure briefly, establish the design system, create the shared layout, define domain types, configure routing and establish the mock-service boundary.
+
+Then implement PHASE 1 and PHASE 2.
+
+Do not attempt to implement all eight phases in one uncontrolled generation.
+
+After completing each phase, summarize:
+- Files created or modified.
+- Functionality implemented.
+- Validation or tests performed.
+- Known limitations.
+- Exact next phase.
+
+Preserve all useful existing code.
+
+The objective is a realistic, coherent business application that can be developed further by an engineer in VS Code, not merely a visually attractive mockup.

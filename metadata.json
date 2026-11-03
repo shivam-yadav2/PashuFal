@@ -1,0 +1,8 @@
+{
+  "name": "Purvanchal Dairy & Pashu Kendra",
+  "description": "Livestock trading, Murrah buffalo brokerage, and dairy management platform in Gorakhpur, UP by Parmeshwar Kushwaha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
