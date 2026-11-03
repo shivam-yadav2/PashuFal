@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './src/server/mockDb.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
+import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,24 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
+
+// ----------------- HEALTH & SYSTEM STATUS -----------------
+app.get('/api/health', async (_req: Request, res: Response) => {
+  const mysqlEnabled = isMySQLEnabled();
+  const mysqlConfig = getMySQLConfig();
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    mysql: {
+      enabled: mysqlEnabled,
+      host: mysqlConfig?.host || null,
+      database: mysqlConfig?.database || null,
+      port: mysqlConfig?.port || null,
+    },
+    version: '1.0.0',
+    location: BUSINESS_CONFIG.location.displayAddress,
+  });
+});
 
 // ----------------- API ROUTES -----------------
 
@@ -250,6 +269,9 @@ app.patch('/api/orders/:id/status', (req: Request, res: Response) => {
 
 async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
+
+  // Test local MySQL database connection if configured in .env
+  await testMySQLConnection();
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
