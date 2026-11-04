@@ -25,6 +25,7 @@ import { CompleteSaleModal } from '../../components/livestock/CompleteSaleModal'
 import { MilkCollectionModal } from '../../components/dairy/MilkCollectionModal';
 import { OwnProductionModal } from '../../components/dairy/OwnProductionModal';
 import { NewContactModal } from '../../components/contacts/NewContactModal';
+import { SiteSettingsPanel } from '../../components/admin/SiteSettingsPanel';
 import { AnimalDetailModal } from '../../components/livestock/AnimalDetailModal';
 import { 
   RefreshCw, 
@@ -1363,33 +1364,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* ========================================================= */}
           {/* 10. SETTINGS                                              */}
           {/* ========================================================= */}
-          {currentPage === 'SETTINGS' && (
-            <div className="space-y-4">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 max-w-2xl">
-                <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-                  {t('फार्म एवं संपर्क विवरण', 'Farm Master Configuration')}
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <label className="text-slate-500 font-bold block mb-1">{t('फर्म का नाम', 'Brand Name')}:</label>
-                    <span className="font-bold text-slate-900 text-sm">{BUSINESS_CONFIG.brandName}</span>
-                  </div>
-                  <div>
-                    <label className="text-slate-500 font-bold block mb-1">{t('मालिक का नाम', 'Proprietor')}:</label>
-                    <span className="font-bold text-slate-900 text-sm">{BUSINESS_CONFIG.ownerName}</span>
-                  </div>
-                  <div>
-                    <label className="text-slate-500 font-bold block mb-1">{t('हेल्पलाइन फोन', 'Direct Phone')}:</label>
-                    <span className="font-mono font-bold text-slate-900">{BUSINESS_CONFIG.contacts.phone}</span>
-                  </div>
-                  <div>
-                    <label className="text-slate-500 font-bold block mb-1">{t('फार्म का पता', 'Address')}:</label>
-                    <span className="text-slate-800">{BUSINESS_CONFIG.location.displayAddress}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {currentPage === 'SETTINGS' && <SiteSettingsPanel />}
 
         </main>
       </div>

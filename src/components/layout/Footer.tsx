@@ -1,115 +1,141 @@
 import React from 'react';
+import { Phone, Mail, MapPin, MessageCircle, Facebook, Instagram, Youtube, Navigation } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../config/business';
-import { PublicPage } from './TopBar';
+import { PublicPage, whatsappLink } from './TopBar';
 import { useLanguage } from '../../context/LanguageContext';
+import { BrandMark } from './BrandMark';
 
 interface FooterProps {
   onNavigatePage?: (page: PublicPage) => void;
 }
 
+const LINKS: { id: PublicPage; labelHi: string; labelEn: string }[] = [
+  { id: 'ANIMALS', labelHi: 'उपलब्ध पशु', labelEn: 'Available animals' },
+  { id: 'BULK_ORDER', labelHi: 'बल्क ऑर्डर', labelEn: 'Bulk orders for farms' },
+  { id: 'TRANSPORT', labelHi: 'पशु परिवहन', labelEn: 'Animal transport' },
+  { id: 'ABOUT', labelHi: 'हमारे बारे में', labelEn: 'About us' },
+  { id: 'CONTACT', labelHi: 'संपर्क', labelEn: 'Contact' },
+  { id: 'DASHBOARD', labelHi: 'मेरा डैशबोर्ड', labelEn: 'My dashboard' },
+];
+
 export const Footer: React.FC<FooterProps> = ({ onNavigatePage }) => {
   const { t } = useLanguage();
+  const { contacts, location, content, social, serviceAreas } = BUSINESS_CONFIG;
+  const socials = [
+    { href: social.facebook, icon: Facebook, label: 'Facebook' },
+    { href: social.instagram, icon: Instagram, label: 'Instagram' },
+    { href: social.youtube, icon: Youtube, label: 'YouTube' },
+  ].filter((s) => s.href);
 
   return (
-    <footer className="bg-[#0F241A] text-slate-300 pt-12 pb-8 border-t border-emerald-950 text-xs">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-emerald-900/60">
-          
-          {/* Col 1 */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm">
-                च
-              </div>
-              <span className="text-sm font-black text-white">
-                {BUSINESS_CONFIG.brandName}
-              </span>
+    <footer className="bg-brand-900 text-brand-100/80 text-sm">
+      <div className="container-page py-14 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-4 lg:col-span-1">
+          <div className="flex items-center gap-3">
+            <BrandMark />
+            <span className="font-semibold text-white leading-tight">
+              {t(BUSINESS_CONFIG.hindiBrandName, BUSINESS_CONFIG.brandName)}
+            </span>
+          </div>
+          <p className="text-brand-100/70 leading-relaxed">{t(content.footerAboutHi, content.footerAboutEn)}</p>
+          <p className="text-brand-100/60">
+            {t('प्रोपराइटर', 'Proprietor')}: <span className="text-white">{t(BUSINESS_CONFIG.hindiOwnerName, BUSINESS_CONFIG.ownerName)}</span>
+          </p>
+          {socials.length > 0 && (
+            <div className="flex gap-2 pt-1">
+              {socials.map(({ href, icon: Icon, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
-            <p className="text-slate-400 leading-relaxed text-xs">
-              {t(
-                'दादी चम्पा के आशीर्वाद से स्थापित। उच्च दुग्ध क्षमता वाली भैंस, गाय, बल्क डेयरी फार्म आपूर्ति एवं सुरक्षित वाहन परिवहन।',
-                'High-milking buffaloes, dairy cows, commercial bulk supply, and doorstep transport in Deoria & Gorakhpur.'
-              )}
-            </p>
-            <div className="text-[11px] text-amber-300 font-semibold">
-              {t('प्रोपराइटर: परमेश्वर कुशवाहा', 'Proprietor: Parmeshwar Kushwaha')}
-            </div>
-          </div>
-
-          {/* Col 2 */}
-          <div className="space-y-2">
-            <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
-              {t('महत्वपूर्ण लिंक', 'Quick Links')}
-            </h4>
-            <ul className="space-y-1.5 text-slate-300 text-xs">
-              <li>
-                <button onClick={() => onNavigatePage?.('HOME')} className="hover:text-amber-200 cursor-pointer">
-                  {t('होम (Home)', 'Home')}
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigatePage?.('ANIMALS')} className="hover:text-amber-200 cursor-pointer">
-                  {t('हमारे पशु (Our Animals)', 'Our Animals')}
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigatePage?.('BULK_ORDER')} className="hover:text-amber-200 cursor-pointer text-amber-300 font-bold">
-                  {t('बल्क ऑर्डर (Bulk Order)', 'Bulk Order for Farms')}
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigatePage?.('TRANSPORT')} className="hover:text-amber-200 cursor-pointer">
-                  {t('गाड़ी व ट्रांसपोर्ट (Transport)', 'Animal Transport')}
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigatePage?.('DASHBOARD')} className="hover:text-amber-200 cursor-pointer text-emerald-400 font-bold">
-                  {t('माय डैशबोर्ड (Customer Portal)', 'My Dashboard')}
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 3 */}
-          <div className="space-y-2">
-            <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
-              {t('स्थान एवं परिधि', 'Location & Service')}
-            </h4>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              <strong>{t('फार्म पता:', 'Farm Address:')}</strong><br />
-              {BUSINESS_CONFIG.location.displayAddress} (पिन: 274502)<br /><br />
-              <strong>{t('कवरेज क्षेत्र:', 'Coverage:')}</strong><br />
-              {t('संपूर्ण देवरिया जिला, सलेमपुर, लार, गोरखपुर (GKP), कुशीनगर व बिहार सीमांत।', 'Whole Deoria District, Gorakhpur (GKP), Kushinagar & Bihar border.')}
-            </p>
-          </div>
-
-          {/* Col 4 */}
-          <div className="space-y-2">
-            <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
-              {t('हेल्पलाइन व संपर्क', 'Helpline & Contact')}
-            </h4>
-            <a href={`tel:${BUSINESS_CONFIG.contacts.phone}`} className="font-mono text-lg font-black text-amber-300 block hover:text-white">
-              {BUSINESS_CONFIG.contacts.phone}
-            </a>
-            <p className="text-slate-400 text-xs">
-              {t('परमेश्वर कुशवाहा / अरुण भाई', 'Parmeshwar Kushwaha / Arun Bhai')}
-            </p>
-            <a
-              href={`https://wa.me/${BUSINESS_CONFIG.contacts.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors mt-1"
-            >
-              <span>💬</span>
-              <span>WhatsApp Chat</span>
-            </a>
-          </div>
-
+          )}
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
-          <p>© {new Date().getFullYear()} {BUSINESS_CONFIG.brandName} · {t('सर्वाधिकार सुरक्षित', 'All Rights Reserved')}</p>
-          <p className="font-mono">{t('लार, देवरिया (उ.प्र.) 274502', 'Lar, Deoria (UP) 274502')}</p>
+        <div>
+          <h4 className="text-white font-semibold mb-4">{t('लिंक', 'Explore')}</h4>
+          <ul className="space-y-2.5">
+            {LINKS.map((link) => (
+              <li key={link.id}>
+                <button onClick={() => onNavigatePage?.(link.id)} className="hover:text-white transition-colors">
+                  {t(link.labelHi, link.labelEn)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-white font-semibold mb-4">{t('सेवा क्षेत्र', 'Service areas')}</h4>
+          <ul className="space-y-2.5">
+            {serviceAreas.map((area) => (
+              <li key={area} className="leading-snug">{area}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-white font-semibold mb-4">{t('संपर्क करें', 'Get in touch')}</h4>
+          <ul className="space-y-3">
+            <li>
+              <a href={`tel:${contacts.rawPhone || contacts.phone}`} className="flex items-start gap-2.5 hover:text-white">
+                <Phone className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  <span className="block text-white font-medium">{contacts.phone}</span>
+                  <span className="block text-brand-100/60 text-xs">
+                    {BUSINESS_CONFIG.ownerName}
+                    {contacts.secondaryContactName ? ` · ${contacts.secondaryContactName}` : ''}
+                  </span>
+                </span>
+              </a>
+            </li>
+            {contacts.email && (
+              <li>
+                <a href={`mailto:${contacts.email}`} className="flex items-center gap-2.5 hover:text-white break-all">
+                  <Mail className="w-4 h-4 shrink-0" />
+                  {contacts.email}
+                </a>
+              </li>
+            )}
+            <li className="flex items-start gap-2.5">
+              <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                {t(location.displayAddress, location.addressSummary)}
+                {location.pinCode ? ` – ${location.pinCode}` : ''}
+              </span>
+            </li>
+          </ul>
+          <div className="flex flex-wrap gap-2 mt-5">
+            <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="btn-whatsapp px-4! py-2!">
+              <MessageCircle className="w-4 h-4" /> WhatsApp
+            </a>
+            {location.mapUrl && (
+              <a
+                href={location.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                <Navigation className="w-4 h-4" /> {t('रास्ता देखें', 'Directions')}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-white/10">
+        <div className="container-page py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-brand-100/50">
+          <p>
+            © {new Date().getFullYear()} {BUSINESS_CONFIG.brandName}. {t('सर्वाधिकार सुरक्षित।', 'All rights reserved.')}
+          </p>
+          <p>{location.addressSummary}</p>
         </div>
       </div>
     </footer>

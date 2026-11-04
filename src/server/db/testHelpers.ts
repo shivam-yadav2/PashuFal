@@ -18,6 +18,7 @@ const ALL_TABLES = [
   'payments',
   'audit_logs',
   'admin_users',
+  'site_settings',
 ];
 
 let testPool: Pool | null = null;

@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 import { db } from './src/server/db/repositories/index.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
 import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
-import { handleApiError } from './src/server/errors.ts';
+import { handleApiError, BusinessError } from './src/server/errors.ts';
+import { getSiteSettings, saveSiteSettings, getSmtpSettings, saveSmtpSettings } from './src/server/db/repositories/settingsRepository.ts';
+import { notifyNewEnquiry, sendTestEmail } from './src/server/mailer.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,8 +37,60 @@ app.get('/api/health', async (_req: Request, res: Response) => {
 // ----------------- API ROUTES -----------------
 
 // Business Configuration
-app.get('/api/business', (_req: Request, res: Response) => {
-  res.json({ success: true, data: BUSINESS_CONFIG });
+app.get('/api/business', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await getSiteSettings() });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+// ----------------- SITE SETTINGS (admin-editable content) -----------------
+// NOTE: the PUT/POST routes below are not yet protected by server-side auth —
+// that lands with the authentication plan, alongside every other admin route.
+app.get('/api/settings', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await getSiteSettings() });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+app.put('/api/settings', async (req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await saveSiteSettings(req.body ?? {}) });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+app.get('/api/settings/smtp', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await getSmtpSettings() });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+app.put('/api/settings/smtp', async (req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await saveSmtpSettings(req.body ?? {}) });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+app.post('/api/settings/smtp/test', async (req: Request, res: Response) => {
+  try {
+    const to = String(req.body?.to ?? '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      throw new BusinessError('Enter a valid email address to send the test to.');
+    }
+    await sendTestEmail(to);
+    res.json({ success: true });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
 });
 
 // Livestock Listings
@@ -60,7 +114,12 @@ app.get('/api/livestock', async (req: Request, res: Response) => {
 app.get('/api/livestock/public', async (_req: Request, res: Response) => {
   try {
     const publicAnimals = await db.getPublicAnimals();
-    res.json({ success: true, data: publicAnimals });
+    // Strip staff-only fields: who the seller is, our brokerage cut, internal notes.
+    const safe = publicAnimals.map(({ internalNotes, sellerContactId, brokerageCommission, ...rest }) => ({
+      ...rest,
+      listing: { ...rest.listing, reservedForContactId: undefined, soldToContactId: undefined },
+    }));
+    res.json({ success: true, data: safe });
   } catch (err: any) {
     handleApiError(err, res);
   }
@@ -319,6 +378,7 @@ app.post('/api/enquiries', async (req: Request, res: Response) => {
   try {
     const created = await db.createEnquiry(req.body);
     res.status(201).json({ success: true, data: created });
+    void notifyNewEnquiry(created);
   } catch (err: any) {
     handleApiError(err, res);
   }

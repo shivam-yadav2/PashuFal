@@ -14,6 +14,39 @@ import {
   LivestockOrder
 } from '../types/domain';
 
+async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({ success: false, error: `Request failed (${res.status})` }));
+  if (!data.success) throw new Error(data.error || `Request failed (${res.status})`);
+  return data.data as T;
+}
+
+export const settingsApi = {
+  getSite: () => send<import('../config/business').BusinessConfig>('/api/settings', 'GET'),
+  saveSite: (partial: import('../config/business').BusinessSettings) =>
+    send<import('../config/business').BusinessConfig>('/api/settings', 'PUT', partial),
+  getSmtp: () => send<SmtpSettingsView>('/api/settings/smtp', 'GET'),
+  saveSmtp: (partial: Partial<SmtpSettingsView> & { password?: string }) =>
+    send<SmtpSettingsView>('/api/settings/smtp', 'PUT', partial),
+  testSmtp: (to: string) => send<void>('/api/settings/smtp/test', 'POST', { to }),
+};
+
+export interface SmtpSettingsView {
+  enabled: boolean;
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  fromEmail: string;
+  notifyEmail: string;
+  hasPassword: boolean;
+}
+
 export const api = {
   // Livestock
   async getLivestock(params?: { species?: string; breed?: string; minPrice?: number; maxPrice?: number; status?: string; search?: string }): Promise<Animal[]> {

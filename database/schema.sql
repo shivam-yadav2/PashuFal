@@ -404,4 +404,12 @@ CREATE TABLE admin_users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 17. Admin-editable Site Settings (business info, contact, homepage content, SMTP)
+DROP TABLE IF EXISTS site_settings;
+CREATE TABLE site_settings (
+    setting_key VARCHAR(64) PRIMARY KEY,
+    setting_value LONGTEXT NOT NULL COMMENT 'JSON document',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

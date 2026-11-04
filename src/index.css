@@ -1,30 +1,68 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Noto Serif Devanagari', serif;
+
+  --color-brand-50: #f0f7f2;
+  --color-brand-100: #dcede1;
+  --color-brand-600: #2f6b45;
+  --color-brand-700: #245536;
+  --color-brand-800: #1c432b;
+  --color-brand-900: #143120;
+  --color-accent-400: #e0a83a;
+  --color-accent-500: #c98f21;
+}
+
 @layer base {
-  :root {
-    --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
-  
   html {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    font-family: 'Montserrat', sans-serif;
-    color: #1E293B; /* High-contrast readable slate-800 */
-    background-color: #F8F9FA;
+    color: #1c1917;
+    background-color: #fafaf9;
+    font-size: 15px;
+    line-height: 1.6;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat', sans-serif;
-    letter-spacing: -0.02em;
-    color: #0F172A; /* Deep solid readable charcoal */
-    font-weight: 700;
+  h1, h2, h3, h4 {
+    color: #1c1917;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
   }
 
   p {
-    color: #334155; /* Slate 700 - easily readable */
+    color: #44403c;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-900;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-800 shadow-sm transition-colors hover:bg-stone-50;
+  }
+
+  .btn-whatsapp {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-[#1f8f4e] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#187341];
   }
 }

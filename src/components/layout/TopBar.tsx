@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Phone, Mail, Clock, Languages, Menu, X, LogIn, LayoutDashboard, LogOut, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { BUSINESS_CONFIG } from '../../config/business';
+import { BrandMark } from './BrandMark';
 
 export type PublicPage = 'HOME' | 'ANIMALS' | 'BULK_ORDER' | 'TRANSPORT' | 'DASHBOARD' | 'ABOUT' | 'CONTACT';
 
@@ -12,240 +14,212 @@ interface TopBarProps {
   setPublicPage: (page: PublicPage) => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({
-  activeView,
-  setActiveView,
-  publicPage,
-  setPublicPage,
-}) => {
-  const { isAuthenticated, currentUser, logout } = useAuth();
+const NAV_LINKS: { id: PublicPage; labelHi: string; labelEn: string }[] = [
+  { id: 'HOME', labelHi: 'होम', labelEn: 'Home' },
+  { id: 'ANIMALS', labelHi: 'पशु', labelEn: 'Animals' },
+  { id: 'BULK_ORDER', labelHi: 'बल्क ऑर्डर', labelEn: 'Bulk Orders' },
+  { id: 'TRANSPORT', labelHi: 'ट्रांसपोर्ट', labelEn: 'Transport' },
+  { id: 'ABOUT', labelHi: 'हमारे बारे में', labelEn: 'About' },
+  { id: 'CONTACT', labelHi: 'संपर्क', labelEn: 'Contact' },
+];
+
+export function whatsappLink(message?: string): string {
+  const text = message ? `?text=${encodeURIComponent(message)}` : '';
+  return `https://wa.me/${BUSINESS_CONFIG.contacts.whatsapp}${text}`;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ activeView, setActiveView, publicPage, setPublicPage }) => {
+  const { isAuthenticated, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { contacts, content } = BUSINESS_CONFIG;
+  const announcement = t(content.announcementHi || content.announcementEn, content.announcementEn || content.announcementHi);
 
-  const openWhatsApp = () => {
-    const text = encodeURIComponent(
-      language === 'HI'
-        ? `नमस्ते! मुझे चम्पा डेयरी (लार, देवरिया) से उपलब्ध भैंस और गाय या दूध सप्लाई के बारे में जानकारी चाहिए।`
-        : `Hello, I want enquiry regarding buffalo, cow, or fresh milk from Champa Dairy (Lar, Deoria).`
-    );
-    window.open(`https://wa.me/${BUSINESS_CONFIG.contacts.whatsapp}?text=${text}`, '_blank');
-  };
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
-  const navLinks: { id: PublicPage; labelHi: string; labelEn: string }[] = [
-    { id: 'HOME', labelHi: 'होम', labelEn: 'Home' },
-    { id: 'ANIMALS', labelHi: 'हमारे पशु', labelEn: 'Our Animals' },
-    { id: 'BULK_ORDER', labelHi: 'बल्क ऑर्डर', labelEn: 'Bulk Order' },
-    { id: 'TRANSPORT', labelHi: 'ट्रांसपोर्ट', labelEn: 'Transport' },
-    { id: 'ABOUT', labelHi: 'हमारे बारे में', labelEn: 'About Us' },
-    { id: 'CONTACT', labelHi: 'संपर्क करें', labelEn: 'Contact Us' },
-  ];
-
-  const handleNavClick = (page: PublicPage) => {
+  const go = (page: PublicPage) => {
     setActiveView('PUBLIC');
     setPublicPage(page);
-    setMobileMenuOpen(false);
+    setMobileOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const enquiryMessage = t(
+    `नमस्ते, मुझे ${BUSINESS_CONFIG.hindiBrandName} से पशु / दूध के बारे में जानकारी चाहिए।`,
+    `Hello, I'd like to enquire about animals / milk from ${BUSINESS_CONFIG.brandName}.`
+  );
+
   return (
-    <header className="sticky top-0 z-40 bg-white shadow-xs border-b border-slate-200">
-      
-      {/* 1. TOP GREEN BAR MATCHING COLLAGE */}
-      <div className="bg-[#0F241A] text-slate-200 text-xs py-2 px-4 lg:px-8 border-b border-emerald-950 font-medium">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          
-          {/* Left Contact Info */}
-          <div className="flex items-center gap-4 sm:gap-6 text-[11px] sm:text-xs">
-            <a
-              href={`tel:${BUSINESS_CONFIG.contacts.phone}`}
-              className="flex items-center gap-1.5 hover:text-amber-300 transition-colors"
-            >
-              <span className="text-emerald-400">📞</span>
-              <span className="font-mono font-bold text-white">{BUSINESS_CONFIG.contacts.phone}</span>
+    <header className="sticky top-0 z-40">
+      {announcement && (
+        <div className="bg-accent-400 text-stone-900 text-center text-sm font-medium px-4 py-2">{announcement}</div>
+      )}
+
+      <div className="hidden md:block bg-brand-900 text-brand-100 text-[13px]">
+        <div className="container-page flex h-9 items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <a href={`tel:${contacts.rawPhone || contacts.phone}`} className="inline-flex items-center gap-1.5 hover:text-white">
+              <Phone className="w-3.5 h-3.5" aria-hidden />
+              {contacts.phone}
             </a>
-            <span className="text-emerald-800 hidden xs:inline">|</span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-stone-300">
-              <span className="text-emerald-400">✉</span>
-              <span>info@purvanchaldairy.in</span>
-            </span>
-            <span className="text-emerald-800 hidden md:inline">|</span>
-            <span className="hidden md:inline-flex items-center gap-1 text-amber-300 font-semibold text-[11px]">
-              <span>📍</span>
-              <span>{t('लार, देवरिया (उ.प्र.)', 'Lar, Deoria (UP)')}</span>
-            </span>
+            {contacts.email && (
+              <a href={`mailto:${contacts.email}`} className="inline-flex items-center gap-1.5 hover:text-white">
+                <Mail className="w-3.5 h-3.5" aria-hidden />
+                {contacts.email}
+              </a>
+            )}
+            {contacts.workingHours && (
+              <span className="hidden lg:inline-flex items-center gap-1.5 text-brand-100/80">
+                <Clock className="w-3.5 h-3.5" aria-hidden />
+                {contacts.workingHours}
+              </span>
+            )}
           </div>
-
-          {/* Right Action Tools: Language + Dashboard + Login */}
-          <div className="flex items-center gap-3 text-[11px] sm:text-xs">
-            
-            {/* Language Switcher */}
-            <button
-              onClick={toggleLanguage}
-              title={language === 'HI' ? 'Switch to English' : 'हिंदी में बदलें'}
-              className="flex items-center gap-1 hover:text-amber-300 transition-colors cursor-pointer text-slate-300"
-            >
-              <span>🌐</span>
-              <span className="font-bold">{language === 'HI' ? 'English' : 'हिंदी'}</span>
+          <div className="flex items-center gap-5">
+            <button onClick={toggleLanguage} className="inline-flex items-center gap-1.5 hover:text-white">
+              <Languages className="w-3.5 h-3.5" aria-hidden />
+              {language === 'HI' ? 'English' : 'हिंदी'}
             </button>
-
-            <span className="text-emerald-800">|</span>
-
-            {/* Customer Dashboard Link */}
-            <button
-              onClick={() => handleNavClick('DASHBOARD')}
-              className={`hover:text-amber-300 transition-colors cursor-pointer flex items-center gap-1 font-bold ${
-                publicPage === 'DASHBOARD' ? 'text-amber-300' : 'text-slate-300'
-              }`}
-            >
-              <span>👤</span>
-              <span className="hidden xs:inline">{t('माय डैशबोर्ड', 'My Dashboard')}</span>
-              <span className="xs:hidden">{t('डैशबोर्ड', 'Portal')}</span>
-            </button>
-
-            <span className="text-emerald-800">|</span>
-
-            {/* Authentic Staff/Admin Portal */}
-            {isAuthenticated && currentUser ? (
-              <div className="flex items-center gap-1.5 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+            {isAuthenticated ? (
+              <>
                 <button
                   onClick={() => setActiveView(activeView === 'ADMIN' ? 'PUBLIC' : 'ADMIN')}
-                  className="font-bold text-amber-300 hover:text-amber-200 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 hover:text-white"
                 >
-                  {activeView === 'ADMIN' ? t('← स्टोर', '← Store') : t('⚙️ एडमिन', '⚙️ Admin')}
+                  <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                  {activeView === 'ADMIN' ? t('वेबसाइट देखें', 'View website') : t('एडमिन पैनल', 'Admin panel')}
                 </button>
-                <button
-                  onClick={logout}
-                  title={t('लॉगआउट', 'Sign Out')}
-                  className="text-stone-400 hover:text-rose-300 cursor-pointer text-[10px]"
-                >
-                  ✕
+                <button onClick={logout} className="inline-flex items-center gap-1.5 hover:text-white">
+                  <LogOut className="w-3.5 h-3.5" aria-hidden />
+                  {t('लॉग आउट', 'Sign out')}
                 </button>
-              </div>
+              </>
             ) : (
-              <button
-                onClick={() => setActiveView('LOGIN')}
-                className="hover:text-amber-300 transition-colors font-bold text-slate-300 cursor-pointer flex items-center gap-1"
-              >
-                <span>🔒</span>
-                <span>{t('स्टाफ लॉगिन', 'Staff Login')}</span>
+              <button onClick={() => setActiveView('LOGIN')} className="inline-flex items-center gap-1.5 hover:text-white">
+                <LogIn className="w-3.5 h-3.5" aria-hidden />
+                {t('स्टाफ लॉगिन', 'Staff login')}
               </button>
             )}
-
           </div>
-
         </div>
       </div>
 
-      {/* 2. MAIN NAVIGATION BAR MATCHING COLLAGE */}
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-        
-        {/* Brand Wordmark & Cow Emblem */}
-        <button
-          onClick={() => handleNavClick('HOME')}
-          className="flex items-center gap-3 text-left cursor-pointer group"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-[#0F241A] text-amber-300 flex items-center justify-center font-black text-xl shadow-xs group-hover:scale-105 transition-transform shrink-0 border border-emerald-800">
-            च
-          </div>
-          <div>
-            <span className="text-sm sm:text-base font-black text-[#0F241A] tracking-tight block leading-tight">
-              {t('Purvanchal Dairy Pashu Kendra', 'Purvanchal Dairy Pashu Kendra')}
+      <div className="bg-white/95 backdrop-blur border-b border-stone-200">
+        <div className="container-page flex h-16 items-center justify-between gap-6">
+          <button onClick={() => go('HOME')} className="flex items-center gap-3 text-left min-w-0">
+            <BrandMark />
+            <span className="min-w-0">
+              <span className="block truncate font-semibold text-stone-900 leading-tight">
+                {t(BUSINESS_CONFIG.hindiBrandName, BUSINESS_CONFIG.brandName)}
+              </span>
+              <span className="block truncate text-xs text-stone-500 leading-tight">
+                {t(BUSINESS_CONFIG.location.displayAddress, BUSINESS_CONFIG.location.addressSummary)}
+              </span>
             </span>
-            <span className="text-[11px] font-semibold text-emerald-800 block leading-tight">
-              {t('दादी चम्पा फार्म · लार, देवरिया (उ.प्र.)', 'Quality Cows & Buffaloes at Your Doorstep')}
-            </span>
-          </div>
-        </button>
-
-        {/* Desktop Nav Items */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-700">
-          {navLinks.map((link) => {
-            const isActive = activeView === 'PUBLIC' && publicPage === link.id;
-            return (
-              <button
-                key={link.id}
-                onClick={() => handleNavClick(link.id)}
-                className={`transition-all py-1 cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'text-[#0F241A] font-black border-b-2 border-[#0F241A]'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t(link.labelHi, link.labelEn)}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Right CTA: Glowing WhatsApp Button matching collage */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={openWhatsApp}
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer"
-          >
-            <span>💬</span>
-            <span>{t('Chat on WhatsApp', 'Chat on WhatsApp')}</span>
           </button>
 
-          {/* Mobile Menu Hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
-            aria-label="Toggle navigation"
-          >
-            ☰
-          </button>
+          <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
+            {NAV_LINKS.map((link) => {
+              const active = activeView === 'PUBLIC' && publicPage === link.id;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => go(link.id)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    active ? 'bg-brand-50 text-brand-800' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+                  }`}
+                >
+                  {t(link.labelHi, link.labelEn)}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <a href={whatsappLink(enquiryMessage)} target="_blank" rel="noopener noreferrer" className="btn-whatsapp hidden sm:inline-flex">
+              <MessageCircle className="w-4 h-4" aria-hidden />
+              WhatsApp
+            </a>
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden rounded-md p-2 text-stone-700 hover:bg-stone-100"
+              aria-label={t('मेन्यू खोलें', 'Open menu')}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
         </div>
-
       </div>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 shadow-lg">
-          <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => handleNavClick(link.id)}
-                className={`p-2.5 rounded-xl text-left transition-colors cursor-pointer ${
-                  activeView === 'PUBLIC' && publicPage === link.id
-                    ? 'bg-[#0F241A] text-amber-300 font-black'
-                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100'
-                }`}
-              >
-                {t(link.labelHi, link.labelEn)}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-stone-900/40" onClick={() => setMobileOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-5 h-16 border-b border-stone-200">
+              <span className="font-semibold text-stone-900">{t('मेन्यू', 'Menu')}</span>
+              <button onClick={() => setMobileOpen(false)} className="rounded-md p-2 hover:bg-stone-100" aria-label={t('बंद करें', 'Close menu')}>
+                <X className="w-5 h-5" />
               </button>
-            ))}
-            <button
-              onClick={() => handleNavClick('DASHBOARD')}
-              className={`p-2.5 rounded-xl text-left transition-colors cursor-pointer col-span-2 ${
-                activeView === 'PUBLIC' && publicPage === 'DASHBOARD'
-                  ? 'bg-[#0F241A] text-amber-300 font-black'
-                  : 'bg-emerald-50 text-emerald-950 hover:bg-emerald-100'
-              }`}
-            >
-              👤 {t('माय डैशबोर्ड (Customer Portal)', 'My Dashboard')}
-            </button>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <button
-              onClick={openWhatsApp}
-              className="text-emerald-800 font-bold text-xs flex items-center gap-1.5"
-            >
-              <span>💬</span>
-              <span>WhatsApp: 9792820684</span>
-            </button>
-            <button
-              onClick={toggleLanguage}
-              className="text-xs font-bold text-slate-700 underline"
-            >
-              {language === 'HI' ? 'Switch to English' : 'हिंदी'}
-            </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto p-3" aria-label="Mobile">
+              {[...NAV_LINKS, { id: 'DASHBOARD' as PublicPage, labelHi: 'मेरा डैशबोर्ड', labelEn: 'My dashboard' }].map((link) => {
+                const active = activeView === 'PUBLIC' && publicPage === link.id;
+                return (
+                  <button
+                    key={link.id}
+                    onClick={() => go(link.id)}
+                    className={`block w-full rounded-lg px-4 py-3 text-left text-base font-medium ${
+                      active ? 'bg-brand-50 text-brand-800' : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    {t(link.labelHi, link.labelEn)}
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="border-t border-stone-200 p-5 space-y-3">
+              <a href={whatsappLink(enquiryMessage)} target="_blank" rel="noopener noreferrer" className="btn-whatsapp w-full">
+                <MessageCircle className="w-4 h-4" /> WhatsApp
+              </a>
+              <a href={`tel:${contacts.rawPhone || contacts.phone}`} className="btn-secondary w-full">
+                <Phone className="w-4 h-4" /> {contacts.phone}
+              </a>
+              <div className="flex items-center justify-between pt-1 text-sm">
+                <button onClick={toggleLanguage} className="inline-flex items-center gap-1.5 text-stone-600">
+                  <Languages className="w-4 h-4" /> {language === 'HI' ? 'English' : 'हिंदी'}
+                </button>
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      setActiveView('ADMIN');
+                      setMobileOpen(false);
+                    }}
+                    className="text-stone-600"
+                  >
+                    {t('एडमिन पैनल', 'Admin panel')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setActiveView('LOGIN');
+                      setMobileOpen(false);
+                    }}
+                    className="text-stone-600"
+                  >
+                    {t('स्टाफ लॉगिन', 'Staff login')}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
-
     </header>
   );
 };

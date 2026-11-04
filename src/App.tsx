@@ -15,6 +15,8 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AnimalDetailModal } from './components/livestock/AnimalDetailModal';
 import { api } from './services/api';
+import { BrandMark } from './components/layout/BrandMark';
+import { BUSINESS_CONFIG } from './config/business';
 import { 
   Animal, 
   Contact, 
@@ -61,6 +63,12 @@ function MainApplication() {
 
   const loadData = useCallback(async () => {
     try {
+      // Public visitors only ever get the public animal list. Contacts,
+      // payments, audit logs etc. are fetched only for signed-in staff.
+      if (!isAuthenticated) {
+        setAnimals((await api.getPublicLivestock()) || []);
+        return;
+      }
       const [
         livestockData,
         contactsData,
@@ -110,7 +118,7 @@ function MainApplication() {
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, isAuthenticated]);
 
   useEffect(() => {
     loadData();
@@ -258,17 +266,10 @@ function MainApplication() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 rounded-xl bg-[#0F241A] text-amber-300 font-bold text-2xl mx-auto flex items-center justify-center animate-pulse">
-            च
-          </div>
-          <div className="text-sm font-bold text-stone-800">
-            चम्पा डेयरी एवं पशु केंद्र (लार, देवरिया)
-          </div>
-          <p className="text-xs text-stone-500">
-            Loading Parmeshwar Kushwaha livestock and dairy farm...
-          </p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 animate-pulse">
+          <BrandMark />
+          <div className="text-sm font-medium text-stone-700">{BUSINESS_CONFIG.brandName}</div>
         </div>
       </div>
     );
@@ -323,7 +324,7 @@ function MainApplication() {
 
   // --- VIEW 3: PUBLIC STOREFRONT ---
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-stone-900">
+    <div className="min-h-screen flex flex-col text-stone-900">
       {/* Top Bar with Page Router and Authentic Staff Login Trigger */}
       <TopBar
         activeView={activeView}

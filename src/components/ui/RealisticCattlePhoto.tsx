@@ -18,17 +18,15 @@ export const RealisticCattlePhoto: React.FC<RealisticCattlePhotoProps> = ({
   imageUrl,
   alt = "Dairy Cattle",
 }) => {
-  const [imgFailed, setImgFailed] = useState(false);
+  // Tried in order: the animal's own photo, then a breed-appropriate stock
+  // photo, then the drawn illustration below. Each failed URL is skipped.
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
 
   const isBuffalo = species === 'BUFFALO' || breed.toLowerCase().includes('murrah') || breed.toLowerCase().includes('jaffarabadi');
   const isGir = breed.toLowerCase().includes('gir');
   const isSahiwal = breed.toLowerCase().includes('sahiwal');
 
-  // Curated photographic livestock images for real cattle presentation
-  const getCattlePhoto = () => {
-    if (imageUrl && !imgFailed && !imageUrl.startsWith('/assets/')) {
-      return imageUrl;
-    }
+  const getStockPhoto = () => {
     if (isBuffalo) {
       return 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=1000&q=80';
     }
@@ -41,22 +39,22 @@ export const RealisticCattlePhoto: React.FC<RealisticCattlePhotoProps> = ({
     return 'https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=1000&q=80';
   };
 
-  const activePhotoUrl = getCattlePhoto();
+  const activePhotoUrl = [imageUrl, getStockPhoto()].find((url) => url && !failedUrls.includes(url));
 
-  // If a valid image URL is available and hasn't failed, render it
-  if (activePhotoUrl && !imgFailed) {
+  if (activePhotoUrl) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
         <img
           src={activePhotoUrl}
           alt={alt}
+          loading="lazy"
           referrerPolicy="no-referrer"
-          onError={() => setImgFailed(true)}
+          onError={() => setFailedUrls((prev) => [...prev, activePhotoUrl])}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
         {tagNumber && (
-          <div className="absolute top-2.5 left-2.5 bg-black/75 text-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
-            🏷️ {tagNumber}
+          <div className="absolute top-2.5 left-2.5 rounded bg-black/60 px-2 py-0.5 font-mono text-[11px] font-medium text-white backdrop-blur-sm">
+            {tagNumber}
           </div>
         )}
       </div>
@@ -65,7 +63,7 @@ export const RealisticCattlePhoto: React.FC<RealisticCattlePhotoProps> = ({
 
   // Realistic photographic SVG composition representing real Indian Murrah buffaloes and cattle
   return (
-    <div className={`relative overflow-hidden bg-gradient-to-b from-stone-900 via-stone-850 to-stone-950 ${className}`}>
+    <div className={`relative overflow-hidden bg-linear-to-b from-stone-900 via-stone-850 to-stone-950 ${className}`}>
       {/* Photo-realistic rendering with natural lighting and depth */}
       <svg
         viewBox="0 0 400 240"
