@@ -27,4 +27,12 @@ describe('ordersRepository', () => {
     expect(found?.animalIds.sort()).toEqual(['A1', 'A2']);
     expect(found?.totalAmount).toBe(100000);
   });
+
+  it('generates unique ids across many rapid creations (old 3-digit-random scheme collided well before this many)', async () => {
+    const results = await Promise.all(
+      Array.from({ length: 150 }, () => orders.createOrder({ customerName: 'X', agreedPrice: 1000 }, pool))
+    );
+    const ids = results.map((o) => o.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });

@@ -1,6 +1,8 @@
 import { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool, withTransaction } from '../mysql';
 import { recordAudit } from './auditRepository';
+import { BusinessError } from '../../errors';
+import { nextId } from '../idGen';
 import { Animal, AnimalMedia, LivestockTransaction } from '../../../types/domain';
 
 export interface AnimalFilters {
@@ -256,10 +258,10 @@ export async function createAnimal(
         `LIST-${animal.id}`, animal.id, animal.listing.title, animal.listing.description,
         animal.listing.priceMin, animal.listing.priceMax, animal.listing.contactForPrice ?? false,
         animal.listing.currency, animal.listing.status, animal.listing.location,
-        animal.listing.publishedAt ?? null, animal.listing.lastVerifiedAt,
+        toDbValue('publishedAt', animal.listing.publishedAt), animal.listing.lastVerifiedAt,
         animal.listing.reservationDeposit ?? null, animal.listing.reservedForContactId ?? null,
-        animal.listing.reservedAt ?? null, animal.listing.soldPrice ?? null,
-        animal.listing.soldToContactId ?? null, animal.listing.soldAt ?? null,
+        toDbValue('reservedAt', animal.listing.reservedAt), animal.listing.soldPrice ?? null,
+        animal.listing.soldToContactId ?? null, toDbValue('soldAt', animal.listing.soldAt),
       ]
     );
 
@@ -305,6 +307,22 @@ const LISTING_FIELD_TO_COLUMN: Record<string, string> = {
   soldToContactId: 'sold_to_contact_id', soldAt: 'sold_at',
 };
 
+// animal_listings.published_at/reserved_at/sold_at are TIMESTAMP columns. The
+// frontend sends these as UTC ISO strings (`new Date().toISOString()`); a
+// string bound directly stores its numeric digits verbatim, which this
+// server's convention (NOW(), dateStrings:true reads, lib/dates.ts display)
+// treats as local wall-clock, not UTC. Converting to a real Date object lets
+// mysql2 serialize it in the connection's local time, matching everything else.
+const TIMESTAMP_LISTING_FIELDS = new Set(['publishedAt', 'reservedAt', 'soldAt']);
+
+function toDbValue(field: string, value: any): any {
+  if (value == null) return null;
+  if (TIMESTAMP_LISTING_FIELDS.has(field) && typeof value === 'string') {
+    return new Date(value);
+  }
+  return value;
+}
+
 function buildSetClause(updates: Record<string, any>, fieldMap: Record<string, string>): { sql: string; params: any[] } {
   const columns: string[] = [];
   const params: any[] = [];
@@ -312,7 +330,7 @@ function buildSetClause(updates: Record<string, any>, fieldMap: Record<string, s
     const column = fieldMap[field];
     if (!column) continue;
     columns.push(`${column} = ?`);
-    params.push(value === undefined ? null : value);
+    params.push(toDbValue(field, value));
   }
   return { sql: columns.join(', '), params };
 }
@@ -372,6 +390,13 @@ async function lockAnimalStatus(conn: PoolConnection, id: string): Promise<{ sta
   return rows[0] as { status: string } | undefined;
 }
 
+async function assertContactExists(conn: PoolConnection, contactId: string, label: string): Promise<void> {
+  const [rows] = await conn.query<RowDataPacket[]>('SELECT id FROM contacts WHERE id = ?', [contactId]);
+  if (rows.length === 0) {
+    throw new BusinessError(`${label} ${contactId} does not exist.`);
+  }
+}
+
 export async function reserveAnimal(
   id: string,
   deposit: number,
@@ -383,13 +408,15 @@ export async function reserveAnimal(
     const current = await lockAnimalStatus(conn, id);
     if (!current) return;
 
+    await assertContactExists(conn, contactId, 'Contact');
+
     const [result] = await conn.execute(
       `UPDATE animal_listings SET status = 'RESERVED', reservation_deposit = ?, reserved_for_contact_id = ?, reserved_at = NOW()
        WHERE animal_id = ? AND status = 'AVAILABLE'`,
       [deposit, contactId, id]
     );
     if ((result as any).affectedRows === 0) {
-      throw new Error(`Cannot reserve animal in '${current.status}' status. Only AVAILABLE animals can be reserved.`);
+      throw new BusinessError(`Cannot reserve animal in '${current.status}' status. Only AVAILABLE animals can be reserved.`);
     }
   }, pool);
 
@@ -418,7 +445,7 @@ export async function releaseReservation(
       [id]
     );
     if ((result as any).affectedRows === 0) {
-      throw new Error(`Cannot release animal in '${current.status}' status.`);
+      throw new BusinessError(`Cannot release animal in '${current.status}' status.`);
     }
   }, pool);
 
@@ -446,39 +473,33 @@ export async function completeSale(
   const txn: LivestockTransaction = await withTransaction(async (conn) => {
     const current = await lockAnimalStatus(conn, id);
     if (current && current.status === 'SOLD') {
-      throw new Error(`Animal ${id} is already marked as SOLD.`);
+      throw new BusinessError(`Animal ${id} is already marked as SOLD.`);
     }
+
+    await assertContactExists(conn, buyerContactId, 'Buyer contact');
 
     await conn.execute(
       `UPDATE animal_listings SET status = 'SOLD', sold_price = ?, sold_to_contact_id = ?, sold_at = NOW() WHERE animal_id = ?`,
       [agreedPrice, buyerContactId, id]
     );
 
-    const [countRows] = await conn.query<RowDataPacket[]>('SELECT COUNT(*) AS c FROM livestock_transactions');
-    const txnId = `TXN-${new Date().getFullYear()}-${String((countRows[0] as any).c + 1).padStart(3, '0')}`;
+    const txnId = nextId(`TXN-${new Date().getFullYear()}`);
     const commissionAmount = animal.ownershipType === 'BROKERAGE' ? (animal.brokerageCommission || 1500) : null;
     const commissionSettled = animal.ownershipType === 'BROKERAGE' ? false : null;
     const saleDate = new Date().toISOString().split('T')[0];
 
-    try {
-      await conn.execute(
-        `INSERT INTO livestock_transactions (
-          id, animal_id, listing_reference_title, buyer_contact_id, seller_contact_id,
-          ownership_type, agreed_price, commission_amount, commission_settled, sale_date,
-          status, amount_paid, outstanding_balance, notes, recorded_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, 0, ?, ?)`,
-        [
-          txnId, id, animal.listing.title, buyerContactId, animal.sellerContactId ?? null,
-          animal.ownershipType, agreedPrice, commissionAmount, commissionSettled ?? false, saleDate,
-          agreedPrice, notes || `Direct completed sale recorded by ${actor}`, actor,
-        ]
-      );
-    } catch (err: any) {
-      if (err.code === 'ER_NO_REFERENCED_ROW_2') {
-        throw new Error(`Buyer contact ${buyerContactId} does not exist.`);
-      }
-      throw err;
-    }
+    await conn.execute(
+      `INSERT INTO livestock_transactions (
+        id, animal_id, listing_reference_title, buyer_contact_id, seller_contact_id,
+        ownership_type, agreed_price, commission_amount, commission_settled, sale_date,
+        status, amount_paid, outstanding_balance, notes, recorded_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, 0, ?, ?)`,
+      [
+        txnId, id, animal.listing.title, buyerContactId, animal.sellerContactId ?? null,
+        animal.ownershipType, agreedPrice, commissionAmount, commissionSettled ?? false, saleDate,
+        agreedPrice, notes || `Direct completed sale recorded by ${actor}`, actor,
+      ]
+    );
 
     return {
       id: txnId,

@@ -9,6 +9,21 @@ export interface MySQLConfig {
   database: string;
 }
 
+// The spec targets MySQL 8.0+/MariaDB 10.5+, both of which default to strict
+// mode. The actual local dev server (older MariaDB) does not, which lets
+// invalid data (over-long strings, bad enum values, zero dates) through
+// silently instead of raising an error — a real environment-fidelity gap, not
+// just a style preference. Set it explicitly on every new physical
+// connection so behavior doesn't depend on the server's own default.
+export const STRICT_SQL_MODE =
+  'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+export function enforceStrictSqlMode(pool: Pool): void {
+  pool.on('connection', (connection) => {
+    connection.query(`SET SESSION sql_mode = '${STRICT_SQL_MODE}'`);
+  });
+}
+
 let pool: Pool | null = null;
 let isConnected = false;
 
@@ -52,6 +67,7 @@ export function getPool(): Pool | null {
     };
 
     pool = mysql.createPool(poolOptions);
+    enforceStrictSqlMode(pool);
   }
   return pool;
 }

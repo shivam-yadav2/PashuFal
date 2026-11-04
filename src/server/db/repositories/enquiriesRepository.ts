@@ -1,6 +1,7 @@
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../mysql';
 import { recordAudit } from './auditRepository';
+import { nextId } from '../idGen';
 import { Enquiry, EnquiryStatus } from '../../../types/domain';
 
 interface EnquiryRow extends RowDataPacket {
@@ -77,9 +78,7 @@ export async function getEnquiryById(id: string, pool: Pool = getPool()!): Promi
 }
 
 export async function createEnquiry(data: Partial<Enquiry>, pool: Pool = getPool()!): Promise<Enquiry> {
-  const randomSuffix = Math.floor(100 + Math.random() * 900);
-  const year = new Date().getFullYear();
-  const id = `ENQ-${year}-${randomSuffix}`;
+  const id = nextId(`ENQ-${new Date().getFullYear()}`);
   const now = new Date().toISOString();
 
   const enquiry: Enquiry = {

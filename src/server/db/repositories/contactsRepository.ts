@@ -42,8 +42,12 @@ export async function getContactById(id: string, pool: Pool = getPool()!): Promi
 }
 
 export async function createContact(contact: Contact, pool: Pool = getPool()!): Promise<Contact> {
+  // created_at/updated_at are DEFAULT CURRENT_TIMESTAMP / ON UPDATE CURRENT_TIMESTAMP
+  // columns — left out here deliberately so the DB's own clock sets them,
+  // rather than trusting a client-supplied ISO string (see animalsRepository's
+  // toDbValue comment for why a raw ISO string in a TIMESTAMP column is wrong here).
   await pool.execute(
-    'INSERT INTO contacts (id, name, phone, whatsapp, location, roles, active, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO contacts (id, name, phone, whatsapp, location, roles, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     [
       contact.id,
       contact.name,
@@ -53,9 +57,7 @@ export async function createContact(contact: Contact, pool: Pool = getPool()!): 
       JSON.stringify(contact.roles),
       contact.active,
       contact.notes ?? null,
-      contact.createdAt,
-      contact.updatedAt,
     ]
   );
-  return contact;
+  return (await getContactById(contact.id, pool))!;
 }

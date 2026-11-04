@@ -1,5 +1,5 @@
 import mysql, { Pool } from 'mysql2/promise';
-import { getMySQLConfig } from './mysql';
+import { getMySQLConfig, enforceStrictSqlMode } from './mysql';
 
 const ALL_TABLES = [
   'contacts',
@@ -40,6 +40,7 @@ export function getTestPool(): Pool {
       dateStrings: true,
       decimalNumbers: true,
     });
+    enforceStrictSqlMode(testPool);
   }
   return testPool;
 }

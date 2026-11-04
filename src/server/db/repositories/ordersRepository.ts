@@ -1,6 +1,7 @@
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import { getPool, withTransaction } from '../mysql';
 import { recordAudit } from './auditRepository';
+import { nextId } from '../idGen';
 import { LivestockOrder, EnquiryStatus } from '../../../types/domain';
 
 interface OrderRow extends RowDataPacket {
@@ -83,7 +84,7 @@ export async function getOrderById(id: string, pool: Pool = getPool()!): Promise
 }
 
 export async function createOrder(data: Partial<LivestockOrder>, pool: Pool = getPool()!): Promise<LivestockOrder> {
-  const id = `ORD-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+  const id = nextId(`ORD-${new Date().getFullYear()}`);
   const now = new Date().toISOString();
   const agreedPrice = data.agreedPrice || 0;
   const transportQuote = data.transportQuote || 0;

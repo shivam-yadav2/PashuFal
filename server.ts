@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { db } from './src/server/db/repositories/index.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
 import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
+import { handleApiError } from './src/server/errors.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,7 +53,7 @@ app.get('/api/livestock', async (req: Request, res: Response) => {
     });
     res.json({ success: true, data: animals });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -61,7 +62,7 @@ app.get('/api/livestock/public', async (_req: Request, res: Response) => {
     const publicAnimals = await db.getPublicAnimals();
     res.json({ success: true, data: publicAnimals });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -70,7 +71,7 @@ app.get('/api/livestock/transactions', async (_req: Request, res: Response) => {
     const txns = await db.getTransactions();
     res.json({ success: true, data: txns });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -82,7 +83,7 @@ app.get('/api/livestock/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: animal });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -91,7 +92,7 @@ app.post('/api/livestock', async (req: Request, res: Response) => {
     const created = await db.createAnimal(req.body, req.body.recordedBy || 'Owner');
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -103,7 +104,7 @@ app.put('/api/livestock/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: updated });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -113,7 +114,7 @@ app.post('/api/livestock/:id/reserve', async (req: Request, res: Response) => {
     const reserved = await db.reserveAnimal(req.params.id, deposit || 5000, contactId, recordedBy);
     res.json({ success: true, data: reserved });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -122,7 +123,7 @@ app.post('/api/livestock/:id/release', async (req: Request, res: Response) => {
     const released = await db.releaseReservation(req.params.id, req.body.recordedBy);
     res.json({ success: true, data: released });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -132,7 +133,7 @@ app.post('/api/livestock/:id/sell', async (req: Request, res: Response) => {
     const txn = await db.completeSale(req.params.id, buyerContactId, agreedPrice, notes, recordedBy);
     res.json({ success: true, data: txn });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -141,7 +142,7 @@ app.get('/api/contacts', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getContacts() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -150,7 +151,7 @@ app.post('/api/contacts', async (req: Request, res: Response) => {
     const created = await db.createContact(req.body);
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -160,7 +161,7 @@ app.get('/api/dairy/production', async (req: Request, res: Response) => {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getProductionEntries(date) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -169,7 +170,7 @@ app.post('/api/dairy/production', async (req: Request, res: Response) => {
     const entry = await db.addProductionEntry(req.body);
     res.status(201).json({ success: true, data: entry });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -178,7 +179,7 @@ app.get('/api/dairy/collection', async (req: Request, res: Response) => {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getCollectionEntries(date) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -187,7 +188,7 @@ app.post('/api/dairy/collection', async (req: Request, res: Response) => {
     const entry = await db.addCollectionEntry(req.body);
     res.status(201).json({ success: true, data: entry });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -196,7 +197,7 @@ app.get('/api/dairy/reconciliation', async (req: Request, res: Response) => {
     const date = (req.query.date as string) || undefined;
     res.json({ success: true, data: await db.getStockReconciliation(date) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -205,7 +206,7 @@ app.get('/api/dairy/movements', async (req: Request, res: Response) => {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getInventoryMovements(date) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -213,7 +214,7 @@ app.get('/api/dairy/subscriptions', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getSubscriptions() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -222,7 +223,7 @@ app.post('/api/dairy/subscriptions', async (req: Request, res: Response) => {
     const sub = await db.createSubscription(req.body);
     res.status(201).json({ success: true, data: sub });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -231,7 +232,7 @@ app.get('/api/dairy/deliveries', async (req: Request, res: Response) => {
     const date = (req.query.date as string) || undefined;
     res.json({ success: true, data: await db.getDeliveries(date) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -241,7 +242,7 @@ app.post('/api/dairy/deliveries/generate', async (req: Request, res: Response) =
     const deliveries = await db.generateDailyDeliveries(date, shift, recordedBy);
     res.json({ success: true, data: deliveries });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -254,7 +255,7 @@ app.patch('/api/dairy/deliveries/:id/status', async (req: Request, res: Response
     }
     res.json({ success: true, data: updated });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -263,7 +264,7 @@ app.get('/api/finance/summary', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getFinancialSummary() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -271,7 +272,7 @@ app.get('/api/finance/payments', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getPayments() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -280,7 +281,7 @@ app.post('/api/finance/payments', async (req: Request, res: Response) => {
     const payment = await db.addPayment(req.body);
     res.status(201).json({ success: true, data: payment });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -288,7 +289,7 @@ app.get('/api/audit', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getAuditLogs() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -298,7 +299,7 @@ app.get('/api/enquiries', async (req: Request, res: Response) => {
     const status = req.query.status as string | undefined;
     res.json({ success: true, data: await db.getEnquiries(status) });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -310,7 +311,7 @@ app.get('/api/enquiries/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: enquiry });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -319,7 +320,7 @@ app.post('/api/enquiries', async (req: Request, res: Response) => {
     const created = await db.createEnquiry(req.body);
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -339,7 +340,7 @@ app.patch('/api/enquiries/:id/status', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: updated });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -347,7 +348,7 @@ app.get('/api/orders', async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getOrders() });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -356,7 +357,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
     const created = await db.createOrder(req.body);
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 
@@ -369,7 +370,7 @@ app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: updated });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    handleApiError(err, res);
   }
 });
 

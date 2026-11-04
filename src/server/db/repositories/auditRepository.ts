@@ -1,5 +1,6 @@
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../mysql';
+import { nextId } from '../idGen';
 import { AuditEvent } from '../../../types/domain';
 
 interface AuditLogRow extends RowDataPacket {
@@ -28,7 +29,7 @@ export async function recordAudit(
   entry: Omit<AuditEvent, 'id' | 'timestamp'>,
   pool: Pool = getPool()!
 ): Promise<void> {
-  const id = `AUD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = nextId('AUD');
   await pool.execute(
     'INSERT INTO audit_logs (id, actor, action, entity_type, entity_id, timestamp, details) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [id, entry.actor, entry.action, entry.entityType, entry.entityId, new Date(), entry.details]

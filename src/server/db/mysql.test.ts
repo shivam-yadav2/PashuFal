@@ -11,6 +11,19 @@ describe('mysql pool config', () => {
   });
 });
 
+describe('strict sql_mode', () => {
+  beforeEach(() => resetDatabase());
+  afterAll(() => closeTestPool());
+
+  it('rejects an over-long value instead of silently truncating it (contacts.name is VARCHAR(191))', async () => {
+    const pool = getTestPool();
+    const tooLong = 'x'.repeat(300);
+    await expect(
+      pool.execute("INSERT INTO contacts (id, name, phone, location, roles) VALUES ('CONT-STRICT', ?, '0', 'X', '[]')", [tooLong])
+    ).rejects.toThrow(/too long/i);
+  });
+});
+
 describe('withTransaction', () => {
   beforeEach(() => resetDatabase());
   afterAll(() => closeTestPool());

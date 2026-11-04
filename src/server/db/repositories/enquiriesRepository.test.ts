@@ -19,4 +19,12 @@ describe('enquiriesRepository', () => {
     expect((await enquiries.getEnquiries('CONTACTED', pool)).map((x) => x.id)).toContain(e.id);
     expect(await enquiries.getEnquiries('NEW_ENQUIRY', pool)).toHaveLength(0);
   });
+
+  it('generates unique ids across many rapid creations (old 3-digit-random scheme collided well before this many)', async () => {
+    const results = await Promise.all(
+      Array.from({ length: 150 }, (_, i) => enquiries.createEnquiry({ phone: String(i) }, pool))
+    );
+    const ids = results.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });

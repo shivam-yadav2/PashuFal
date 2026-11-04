@@ -1,6 +1,7 @@
 import { Pool, RowDataPacket } from 'mysql2/promise';
 import { getPool, withTransaction } from '../mysql';
 import { recordAudit } from './auditRepository';
+import { nextId } from '../idGen';
 import { getTodayBusinessDate } from '../../../lib/dates';
 import { MilkProductionEntry, MilkCollectionEntry, MilkInventoryMovement } from '../../../types/domain';
 
@@ -123,7 +124,7 @@ export async function addProductionEntry(entry: MilkProductionEntry, pool: Pool 
       `INSERT INTO milk_inventory_movements (id, business_date, product_type, movement_type, direction, quantity_litres, source_record_id, notes, recorded_by)
        VALUES (?, ?, ?, 'OWN_PRODUCTION', 'INFLOW', ?, ?, ?, ?)`,
       [
-        `MOV-${Date.now()}`, entry.businessDate, productType, entry.quantityLitres, entry.id,
+        nextId('MOV'), entry.businessDate, productType, entry.quantityLitres, entry.id,
         entry.notes || `Own production from ${entry.herdSource}`, entry.recordedBy,
       ]
     );
@@ -174,7 +175,7 @@ export async function addCollectionEntry(entry: MilkCollectionEntry, pool: Pool 
         `INSERT INTO milk_inventory_movements (id, business_date, product_type, movement_type, direction, quantity_litres, source_record_id, notes, recorded_by)
          VALUES (?, ?, ?, 'PURCHASED_ACCEPTED', 'INFLOW', ?, ?, ?, ?)`,
         [
-          `MOV-${Date.now()}`, entry.businessDate, entry.productType, entry.acceptedLitres, entry.id,
+          nextId('MOV'), entry.businessDate, entry.productType, entry.acceptedLitres, entry.id,
           `Intake from supplier ${entry.supplierContactId} (${entry.fatPercentage || 0}% Fat)`, entry.recordedBy,
         ]
       );
