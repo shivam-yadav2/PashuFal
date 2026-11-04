@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import mysql, { Pool, PoolOptions, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import mysql, { Pool, PoolConnection, PoolOptions, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 export interface MySQLConfig {
   host: string;
@@ -47,6 +47,8 @@ export function getPool(): Pool | null {
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
+      dateStrings: true,
+      decimalNumbers: true,
     };
 
     pool = mysql.createPool(poolOptions);
@@ -73,6 +75,24 @@ export async function testMySQLConnection(): Promise<boolean> {
     console.warn('[Database] Gracefully falling back to in-memory store for dev stability.');
     isConnected = false;
     return false;
+  }
+}
+
+export async function withTransaction<T>(
+  fn: (conn: PoolConnection) => Promise<T>,
+  pool: Pool = getPool()!
+): Promise<T> {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await fn(conn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
   }
 }
 
