@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './src/server/db/repositories/index.ts';
@@ -7,6 +8,7 @@ import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/serve
 import { handleApiError, BusinessError } from './src/server/errors.ts';
 import { getSiteSettings, saveSiteSettings, getSmtpSettings, saveSmtpSettings } from './src/server/db/repositories/settingsRepository.ts';
 import { notifyNewEnquiry, sendTestEmail } from './src/server/mailer.ts';
+import { startListening } from './src/server/listen.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -445,10 +447,19 @@ async function startServer() {
     process.exit(1);
   }
 
+  const httpServer = http.createServer(app);
+
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Run Vite's live-reload websocket over this app's own port instead of
+        // its separate default (24678), which collides with any other Vite dev
+        // server running on the same machine. Whether HMR is on at all is still
+        // controlled by `server.hmr` in vite.config.ts (DISABLE_HMR).
+        ws: { server: httpServer },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -459,9 +470,13 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Purvanchal Dairy & Pashu Kendra] Server running at http://localhost:${PORT}`);
-  });
+  try {
+    await startListening(httpServer, PORT, '0.0.0.0');
+  } catch (err: any) {
+    console.error(`[Server] Could not start: ${err.message}`);
+    process.exit(1);
+  }
+  console.log(`[${BUSINESS_CONFIG.brandName}] Server running at http://localhost:${PORT}`);
 }
 
 startServer();
