@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import mysql, { Pool, PoolOptions, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 export interface MySQLConfig {
