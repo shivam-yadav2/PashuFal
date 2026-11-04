@@ -25,7 +25,7 @@ interface HomePageProps {
   onFilterCategory?: (species: 'ALL' | Species, breed?: string) => void;
 }
 
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=1600&q=80';
+const HERO_IMAGE = '/assets/hero/cattle-sunset.png';
 
 export const HomePage: React.FC<HomePageProps> = ({ animals, onSelectAnimal, onNavigatePage, onFilterCategory }) => {
   const { t } = useLanguage();
@@ -82,16 +82,17 @@ export const HomePage: React.FC<HomePageProps> = ({ animals, onSelectAnimal, onN
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-brand-900">
+      <section className="relative flex min-h-[88vh] items-center overflow-hidden bg-brand-900">
         <img
           src={HERO_IMAGE}
           alt=""
           aria-hidden
           referrerPolicy="no-referrer"
-          className="absolute inset-0 h-full w-full object-cover opacity-30"
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-linear-to-r from-brand-900 via-brand-900/90 to-brand-900/40" />
-        <div className="relative container-page py-20 sm:py-24 lg:py-28">
+        <div className="absolute inset-0 bg-linear-to-r from-brand-900/75 via-brand-900/25 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-brand-900/55 via-transparent to-transparent" />
+        <div className="relative container-page py-16">
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm text-brand-100">
               <BadgeCheck className="w-4 h-4 text-accent-400" />
