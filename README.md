@@ -223,7 +223,24 @@ Response should return:
 }
 ```
 
-> **Note on Graceful Fallback**: If MySQL credentials are not supplied or the database server is offline, the app automatically runs in memory-store mode so you can continue testing without interruptions!
+> **MySQL is required.** The server connects to MySQL on startup and exits immediately with a fatal error if it can't — there is no in-memory fallback. Make sure `database/schema.sql` (and, for a fresh database, `database/seed.sql`) has been loaded and your `.env` points at a reachable MySQL/MariaDB server before running `npm run dev` or `npm start`.
+
+---
+
+## 🧪 Running Tests
+
+The integration test suite (`npm test`) runs against a **separate** MySQL database so it never touches your real data — its tables are truncated between tests.
+
+1. Create the test database once and load the schema into it:
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE purvanchal_dairy_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   mysql -u root -p purvanchal_dairy_test < database/schema.sql
+   ```
+2. Set `MYSQL_TEST_DATABASE=purvanchal_dairy_test` in your `.env` (see `.env.example`).
+3. Run:
+   ```bash
+   npm test
+   ```
 
 ---
 

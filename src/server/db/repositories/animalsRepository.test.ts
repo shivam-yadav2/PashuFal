@@ -74,6 +74,19 @@ describe('animalsRepository', () => {
     expect(failed).toHaveLength(1);
   });
 
+  it('completeSale succeeds for an OWNED animal with a real buyer and marks it SOLD', async () => {
+    await animals.createAnimal(buildAnimal({ id: 'PDPK-BUF-SELL' }), 'T', pool);
+    await createContact({ id: 'CONT-BUYER', name: 'Buyer', phone: '1', location: 'L', roles: [], active: true, createdAt: '2026-01-01', updatedAt: '2026-01-01' }, pool);
+
+    const txn = await animals.completeSale('PDPK-BUF-SELL', 'CONT-BUYER', 105000, undefined, 'T', pool);
+    expect(txn?.agreedPrice).toBe(105000);
+    expect(txn?.status).toBe('COMPLETED');
+
+    const sold = await animals.getAnimalById('PDPK-BUF-SELL', pool);
+    expect(sold?.listing.status).toBe('SOLD');
+    expect(sold?.listing.soldPrice).toBe(105000);
+  });
+
   it('completeSale rejects a buyerContactId that does not exist with a 400-style error, not a raw SQL error', async () => {
     await animals.createAnimal(buildAnimal({ id: 'PDPK-BUF-NB' }), 'T', pool);
     await expect(animals.completeSale('PDPK-BUF-NB', 'CONT-MISSING', 100000, undefined, 'T', pool)).rejects.toThrow(

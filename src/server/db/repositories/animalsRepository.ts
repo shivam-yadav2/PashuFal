@@ -469,7 +469,7 @@ export async function completeSale(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, 0, ?, ?)`,
         [
           txnId, id, animal.listing.title, buyerContactId, animal.sellerContactId ?? null,
-          animal.ownershipType, agreedPrice, commissionAmount, commissionSettled, saleDate,
+          animal.ownershipType, agreedPrice, commissionAmount, commissionSettled ?? false, saleDate,
           agreedPrice, notes || `Direct completed sale recorded by ${actor}`, actor,
         ]
       );

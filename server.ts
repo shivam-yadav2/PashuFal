@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { db } from './src/server/mockDb.ts';
+import { db } from './src/server/db/repositories/index.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
 import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
 
@@ -39,77 +39,97 @@ app.get('/api/business', (_req: Request, res: Response) => {
 });
 
 // Livestock Listings
-app.get('/api/livestock', (req: Request, res: Response) => {
-  const { species, breed, minPrice, maxPrice, status, search } = req.query;
-  const animals = db.getAnimals({
-    species: species as string,
-    breed: breed as string,
-    minPrice: minPrice ? parseInt(minPrice as string, 10) : undefined,
-    maxPrice: maxPrice ? parseInt(maxPrice as string, 10) : undefined,
-    status: status as string,
-    search: search as string,
-  });
-  res.json({ success: true, data: animals });
-});
-
-app.get('/api/livestock/public', (_req: Request, res: Response) => {
-  const publicAnimals = db.getPublicAnimals();
-  res.json({ success: true, data: publicAnimals });
-});
-
-app.get('/api/livestock/transactions', (_req: Request, res: Response) => {
-  const txns = (db as any).state.transactions;
-  res.json({ success: true, data: txns });
-});
-
-app.get('/api/livestock/:id', (req: Request, res: Response) => {
-  const animal = db.getAnimalById(req.params.id);
-  if (!animal) {
-    return res.status(404).json({ success: false, error: 'Animal record not found' });
-  }
-  res.json({ success: true, data: animal });
-});
-
-app.post('/api/livestock', (req: Request, res: Response) => {
+app.get('/api/livestock', async (req: Request, res: Response) => {
   try {
-    const created = db.createAnimal(req.body, req.body.recordedBy || 'Owner');
+    const { species, breed, minPrice, maxPrice, status, search } = req.query;
+    const animals = await db.getAnimals({
+      species: species as string,
+      breed: breed as string,
+      minPrice: minPrice ? parseInt(minPrice as string, 10) : undefined,
+      maxPrice: maxPrice ? parseInt(maxPrice as string, 10) : undefined,
+      status: status as string,
+      search: search as string,
+    });
+    res.json({ success: true, data: animals });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/livestock/public', async (_req: Request, res: Response) => {
+  try {
+    const publicAnimals = await db.getPublicAnimals();
+    res.json({ success: true, data: publicAnimals });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/livestock/transactions', async (_req: Request, res: Response) => {
+  try {
+    const txns = await db.getTransactions();
+    res.json({ success: true, data: txns });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/livestock/:id', async (req: Request, res: Response) => {
+  try {
+    const animal = await db.getAnimalById(req.params.id);
+    if (!animal) {
+      return res.status(404).json({ success: false, error: 'Animal record not found' });
+    }
+    res.json({ success: true, data: animal });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/livestock', async (req: Request, res: Response) => {
+  try {
+    const created = await db.createAnimal(req.body, req.body.recordedBy || 'Owner');
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.put('/api/livestock/:id', (req: Request, res: Response) => {
-  const updated = db.updateAnimal(req.params.id, req.body, req.body.recordedBy || 'Owner');
-  if (!updated) {
-    return res.status(404).json({ success: false, error: 'Animal not found' });
+app.put('/api/livestock/:id', async (req: Request, res: Response) => {
+  try {
+    const updated = await db.updateAnimal(req.params.id, req.body, req.body.recordedBy || 'Owner');
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Animal not found' });
+    }
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  res.json({ success: true, data: updated });
 });
 
-app.post('/api/livestock/:id/reserve', (req: Request, res: Response) => {
+app.post('/api/livestock/:id/reserve', async (req: Request, res: Response) => {
   try {
     const { deposit, contactId, recordedBy } = req.body;
-    const reserved = db.reserveAnimal(req.params.id, deposit || 5000, contactId, recordedBy);
+    const reserved = await db.reserveAnimal(req.params.id, deposit || 5000, contactId, recordedBy);
     res.json({ success: true, data: reserved });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/livestock/:id/release', (req: Request, res: Response) => {
+app.post('/api/livestock/:id/release', async (req: Request, res: Response) => {
   try {
-    const released = db.releaseReservation(req.params.id, req.body.recordedBy);
+    const released = await db.releaseReservation(req.params.id, req.body.recordedBy);
     res.json({ success: true, data: released });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/livestock/:id/sell', (req: Request, res: Response) => {
+app.post('/api/livestock/:id/sell', async (req: Request, res: Response) => {
   try {
     const { buyerContactId, agreedPrice, notes, recordedBy } = req.body;
-    const txn = db.completeSale(req.params.id, buyerContactId, agreedPrice, notes, recordedBy);
+    const txn = await db.completeSale(req.params.id, buyerContactId, agreedPrice, notes, recordedBy);
     res.json({ success: true, data: txn });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
@@ -117,152 +137,240 @@ app.post('/api/livestock/:id/sell', (req: Request, res: Response) => {
 });
 
 // Contacts Directory
-app.get('/api/contacts', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getContacts() });
+app.get('/api/contacts', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getContacts() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.post('/api/contacts', (req: Request, res: Response) => {
-  const created = db.createContact(req.body);
-  res.status(201).json({ success: true, data: created });
+app.post('/api/contacts', async (req: Request, res: Response) => {
+  try {
+    const created = await db.createContact(req.body);
+    res.status(201).json({ success: true, data: created });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
 });
 
 // Dairy Operations
-app.get('/api/dairy/production', (req: Request, res: Response) => {
-  const date = req.query.date as string | undefined;
-  res.json({ success: true, data: db.getProductionEntries(date) });
-});
-
-app.post('/api/dairy/production', (req: Request, res: Response) => {
-  const entry = db.addProductionEntry(req.body);
-  res.status(201).json({ success: true, data: entry });
-});
-
-app.get('/api/dairy/collection', (req: Request, res: Response) => {
-  const date = req.query.date as string | undefined;
-  res.json({ success: true, data: db.getCollectionEntries(date) });
-});
-
-app.post('/api/dairy/collection', (req: Request, res: Response) => {
-  const entry = db.addCollectionEntry(req.body);
-  res.status(201).json({ success: true, data: entry });
-});
-
-app.get('/api/dairy/reconciliation', (req: Request, res: Response) => {
-  const date = (req.query.date as string) || undefined;
-  res.json({ success: true, data: db.getStockReconciliation(date) });
-});
-
-app.get('/api/dairy/movements', (req: Request, res: Response) => {
-  const date = req.query.date as string | undefined;
-  res.json({ success: true, data: db.getInventoryMovements(date) });
-});
-
-app.get('/api/dairy/subscriptions', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getSubscriptions() });
-});
-
-app.post('/api/dairy/subscriptions', (req: Request, res: Response) => {
-  const sub = db.createSubscription(req.body);
-  res.status(201).json({ success: true, data: sub });
-});
-
-app.get('/api/dairy/deliveries', (req: Request, res: Response) => {
-  const date = (req.query.date as string) || undefined;
-  res.json({ success: true, data: db.getDeliveries(date) });
-});
-
-app.post('/api/dairy/deliveries/generate', (req: Request, res: Response) => {
-  const { date, shift, recordedBy } = req.body;
-  const deliveries = db.generateDailyDeliveries(date, shift, recordedBy);
-  res.json({ success: true, data: deliveries });
-});
-
-app.patch('/api/dairy/deliveries/:id/status', (req: Request, res: Response) => {
-  const { status, actualLitres, skipReason, recordedBy } = req.body;
-  const updated = db.updateDeliveryStatus(req.params.id, status, actualLitres, skipReason, recordedBy);
-  if (!updated) {
-    return res.status(404).json({ success: false, error: 'Delivery record not found' });
+app.get('/api/dairy/production', async (req: Request, res: Response) => {
+  try {
+    const date = req.query.date as string | undefined;
+    res.json({ success: true, data: await db.getProductionEntries(date) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  res.json({ success: true, data: updated });
+});
+
+app.post('/api/dairy/production', async (req: Request, res: Response) => {
+  try {
+    const entry = await db.addProductionEntry(req.body);
+    res.status(201).json({ success: true, data: entry });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/dairy/collection', async (req: Request, res: Response) => {
+  try {
+    const date = req.query.date as string | undefined;
+    res.json({ success: true, data: await db.getCollectionEntries(date) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/dairy/collection', async (req: Request, res: Response) => {
+  try {
+    const entry = await db.addCollectionEntry(req.body);
+    res.status(201).json({ success: true, data: entry });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/dairy/reconciliation', async (req: Request, res: Response) => {
+  try {
+    const date = (req.query.date as string) || undefined;
+    res.json({ success: true, data: await db.getStockReconciliation(date) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/dairy/movements', async (req: Request, res: Response) => {
+  try {
+    const date = req.query.date as string | undefined;
+    res.json({ success: true, data: await db.getInventoryMovements(date) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/dairy/subscriptions', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getSubscriptions() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/dairy/subscriptions', async (req: Request, res: Response) => {
+  try {
+    const sub = await db.createSubscription(req.body);
+    res.status(201).json({ success: true, data: sub });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/dairy/deliveries', async (req: Request, res: Response) => {
+  try {
+    const date = (req.query.date as string) || undefined;
+    res.json({ success: true, data: await db.getDeliveries(date) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/dairy/deliveries/generate', async (req: Request, res: Response) => {
+  try {
+    const { date, shift, recordedBy } = req.body;
+    const deliveries = await db.generateDailyDeliveries(date, shift, recordedBy);
+    res.json({ success: true, data: deliveries });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.patch('/api/dairy/deliveries/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { status, actualLitres, skipReason, recordedBy } = req.body;
+    const updated = await db.updateDeliveryStatus(req.params.id, status, actualLitres, skipReason, recordedBy);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Delivery record not found' });
+    }
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Financials & Audit
-app.get('/api/finance/summary', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getFinancialSummary() });
+app.get('/api/finance/summary', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getFinancialSummary() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.get('/api/finance/payments', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getPayments() });
+app.get('/api/finance/payments', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getPayments() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.post('/api/finance/payments', (req: Request, res: Response) => {
-  const payment = db.addPayment(req.body);
-  res.status(201).json({ success: true, data: payment });
+app.post('/api/finance/payments', async (req: Request, res: Response) => {
+  try {
+    const payment = await db.addPayment(req.body);
+    res.status(201).json({ success: true, data: payment });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
 });
 
-app.get('/api/audit', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getAuditLogs() });
+app.get('/api/audit', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getAuditLogs() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ----------------- PRD ENQUIRIES & ORDERS -----------------
-app.get('/api/enquiries', (req: Request, res: Response) => {
-  const status = req.query.status as string | undefined;
-  res.json({ success: true, data: db.getEnquiries(status) });
-});
-
-app.get('/api/enquiries/:id', (req: Request, res: Response) => {
-  const enquiry = db.getEnquiryById(req.params.id);
-  if (!enquiry) {
-    return res.status(404).json({ success: false, error: 'Enquiry not found' });
-  }
-  res.json({ success: true, data: enquiry });
-});
-
-app.post('/api/enquiries', (req: Request, res: Response) => {
+app.get('/api/enquiries', async (req: Request, res: Response) => {
   try {
-    const created = db.createEnquiry(req.body);
+    const status = req.query.status as string | undefined;
+    res.json({ success: true, data: await db.getEnquiries(status) });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/enquiries/:id', async (req: Request, res: Response) => {
+  try {
+    const enquiry = await db.getEnquiryById(req.params.id);
+    if (!enquiry) {
+      return res.status(404).json({ success: false, error: 'Enquiry not found' });
+    }
+    res.json({ success: true, data: enquiry });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/enquiries', async (req: Request, res: Response) => {
+  try {
+    const created = await db.createEnquiry(req.body);
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.patch('/api/enquiries/:id/status', (req: Request, res: Response) => {
-  const { status, quotationNotes, quotationAmount, transportQuotation, assignedStaff } = req.body;
-  const updated = db.updateEnquiryStatus(
-    req.params.id, 
-    status, 
-    quotationNotes, 
-    quotationAmount, 
-    transportQuotation,
-    assignedStaff
-  );
-  if (!updated) {
-    return res.status(404).json({ success: false, error: 'Enquiry record not found' });
-  }
-  res.json({ success: true, data: updated });
-});
-
-app.get('/api/orders', (_req: Request, res: Response) => {
-  res.json({ success: true, data: db.getOrders() });
-});
-
-app.post('/api/orders', (req: Request, res: Response) => {
+app.patch('/api/enquiries/:id/status', async (req: Request, res: Response) => {
   try {
-    const created = db.createOrder(req.body);
+    const { status, quotationNotes, quotationAmount, transportQuotation, assignedStaff } = req.body;
+    const updated = await db.updateEnquiryStatus(
+      req.params.id,
+      status,
+      quotationNotes,
+      quotationAmount,
+      transportQuotation,
+      assignedStaff
+    );
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Enquiry record not found' });
+    }
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/orders', async (_req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: await db.getOrders() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/orders', async (req: Request, res: Response) => {
+  try {
+    const created = await db.createOrder(req.body);
     res.status(201).json({ success: true, data: created });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.patch('/api/orders/:id/status', (req: Request, res: Response) => {
-  const { status, deliveryStatus, transporterDetails } = req.body;
-  const updated = db.updateOrderStatus(req.params.id, status, deliveryStatus, transporterDetails);
-  if (!updated) {
-    return res.status(404).json({ success: false, error: 'Order record not found' });
+app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { status, deliveryStatus, transporterDetails } = req.body;
+    const updated = await db.updateOrderStatus(req.params.id, status, deliveryStatus, transporterDetails);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Order record not found' });
+    }
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  res.json({ success: true, data: updated });
 });
 
 // ----------------- VITE & STATIC SERVING -----------------
@@ -270,8 +378,11 @@ app.patch('/api/orders/:id/status', (req: Request, res: Response) => {
 async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Test local MySQL database connection if configured in .env
-  await testMySQLConnection();
+  const connected = await testMySQLConnection();
+  if (!connected) {
+    console.error('[Database] FATAL: Could not connect to MySQL. Check MYSQL_HOST/PORT/USER/PASSWORD/DATABASE in .env. Server will not start without a working database.');
+    process.exit(1);
+  }
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
