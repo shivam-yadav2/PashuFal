@@ -24,6 +24,20 @@ await build({
   packages: 'external', // keep express/mysql2/etc. as real node_modules imports
   sourcemap: true,
   logLevel: 'info',
+  // Bake NODE_ENV=production into this bundle at build time, rather than
+  // trusting it to be set correctly at runtime. This bundle only ever runs
+  // in production, so this is always correct for it — and it lets esbuild
+  // dead-code-eliminate the `if (!isProduction)` dev branch (which
+  // dynamically imports 'vite') out of the output entirely. Some hosts'
+  // "production mode" toggles don't actually set process.env.NODE_ENV the
+  // way they claim to; this way the dev branch can't run even then,
+  // because it no longer exists in the file.
+  define: { 'process.env.NODE_ENV': '"production"' },
+  // Constant-folds `"production" === "production"` to `true` and removes the
+  // now-dead `if (!isProduction)` branch (and its `import('vite')`) from the
+  // output — define alone only substitutes text, this is what actually
+  // eliminates the branch.
+  minifySyntax: true,
 });
 
 console.log('Built dist-server/server.mjs');
