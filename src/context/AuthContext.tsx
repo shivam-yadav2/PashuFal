@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '../types/domain';
+import { authApi } from '../services/api';
 
 export interface AuthUser {
   id: string;
@@ -7,8 +8,6 @@ export interface AuthUser {
   name: string;
   role: UserRole;
   phone: string;
-  title: string;
-  loggedInAt: string;
 }
 
 interface AuthContextType {
@@ -16,8 +15,9 @@ interface AuthContextType {
   userName: string;
   currentUser: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => { success: boolean; error?: string };
-  logout: () => void;
+  isCheckingSession: boolean;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isOwner: boolean;
   isManager: boolean;
   isStaff: boolean;
@@ -25,89 +25,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'champa_dairy_auth_session';
-
-// Production credentials registry for Champa Dairy & Pashu Kendra
-const VALID_CREDENTIALS: Record<string, { pass: string; role: UserRole; name: string; phone: string; title: string }> = {
-  parmeshwar: {
-    pass: 'admin123',
-    role: 'OWNER',
-    name: 'Parmeshwar Kushwaha',
-    phone: '9792820684',
-    title: 'Farm Owner & Managing Director',
-  },
-  owner: {
-    pass: '9792820684',
-    role: 'OWNER',
-    name: 'Parmeshwar Kushwaha',
-    phone: '9792820684',
-    title: 'Farm Owner & Managing Director',
-  },
-  manager: {
-    pass: 'lar2026',
-    role: 'MANAGER',
-    name: 'Ramesh Kumar',
-    phone: '9838123456',
-    title: 'Farm & Dispatch Operations Manager',
-  },
-};
+function toAuthUser(data: { id: string; username: string; fullName: string; role: UserRole; phone: string }): AuthUser {
+  return { id: data.id, username: data.username, name: data.fullName, role: data.role, phone: data.phone };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
-    try {
-      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {
-      // ignore
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  // True until the initial /api/auth/me check completes, so the UI doesn't
+  // flash "logged out" before we know whether a valid session cookie exists.
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    authApi
+      .me()
+      .then((data) => setCurrentUser(toAuthUser(data)))
+      .catch(() => setCurrentUser(null))
+      .finally(() => setIsCheckingSession(false));
+  }, []);
 
   const role: UserRole = currentUser ? currentUser.role : 'PUBLIC';
 
-  useEffect(() => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      if (currentUser) {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-    } catch (e) {
-      console.error('Failed to persist auth session:', e);
+      const data = await authApi.login(username, password);
+      setCurrentUser(toAuthUser(data));
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Invalid username or password.' };
     }
-  }, [currentUser]);
-
-  const login = (usernameInput: string, passwordInput: string): { success: boolean; error?: string } => {
-    const username = usernameInput.trim().toLowerCase();
-    const cred = VALID_CREDENTIALS[username];
-
-    if (!cred) {
-      return { success: false, error: 'अमान्य यूज़रनेम। कृपया सही यूज़रनेम दर्ज करें।' };
-    }
-
-    if (cred.pass !== passwordInput.trim()) {
-      return { success: false, error: 'अमान्य पासवर्ड। कृपया सही पासवर्ड दर्ज करें।' };
-    }
-
-    const user: AuthUser = {
-      id: username,
-      username,
-      name: cred.name,
-      role: cred.role,
-      phone: cred.phone,
-      title: cred.title,
-      loggedInAt: new Date().toISOString(),
-    };
-
-    setCurrentUser(user);
-    return { success: true };
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setCurrentUser(null);
+    }
   };
 
   const userName = currentUser ? `${currentUser.name} (${currentUser.role === 'OWNER' ? 'Owner' : 'Manager'})` : 'Public Visitor';
@@ -119,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userName,
         currentUser,
         isAuthenticated: !!currentUser,
+        isCheckingSession,
         login,
         logout,
         isOwner: role === 'OWNER',

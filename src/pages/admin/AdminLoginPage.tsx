@@ -21,7 +21,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!username.trim() || !password.trim()) {
@@ -30,21 +30,13 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const res = login(username, password);
-      setLoading(false);
-      if (res.success) {
-        onLoginSuccess();
-      } else {
-        setError(res.error || t('गलत क्रेडेंशियल्स', 'Invalid credentials'));
-      }
-    }, 300);
-  };
-
-  const handleQuickFill = (user: string, pass: string) => {
-    setUsername(user);
-    setPassword(pass);
-    setError(null);
+    const res = await login(username, password);
+    setLoading(false);
+    if (res.success) {
+      onLoginSuccess();
+    } else {
+      setError(res.error || t('गलत क्रेडेंशियल्स', 'Invalid credentials'));
+    }
   };
 
   return (
@@ -104,8 +96,8 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="parmeshwar / manager"
                   autoComplete="username"
+                  required
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0F241A] focus:border-transparent text-sm text-slate-900 font-medium bg-slate-50/50"
                 />
               </div>
@@ -143,6 +135,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
                   placeholder="••••••••"
                   autoComplete="current-password"
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0F241A] focus:border-transparent text-sm text-slate-900 font-medium bg-slate-50/50 font-mono"
+                  required
                 />
               </div>
             </div>
@@ -166,43 +159,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             </button>
           </form>
 
-          {/* Quick Demo Fill */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
-              {t('त्वरित डेमो लॉगिन', 'Quick Demo Access')}
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('parmeshwar', 'admin123')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors cursor-pointer"
-              >
-                <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
-                  <span>{t('मालिक', 'Owner')}</span>
-                  <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1 py-0.2 rounded font-mono font-medium">demo</span>
-                </div>
-                <div className="text-[11px] text-slate-600 font-medium truncate mt-0.5">
-                  Parmeshwar Kushwaha
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('manager', 'lar2026')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors cursor-pointer"
-              >
-                <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
-                  <span>{t('मैनेजर', 'Manager')}</span>
-                  <span className="text-[10px] text-slate-700 bg-slate-200 px-1 py-0.2 rounded font-mono font-medium">demo</span>
-                </div>
-                <div className="text-[11px] text-slate-600 font-medium truncate mt-0.5">
-                  Arun / Manager
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>{t('सुरक्षित आंतरिक पोर्टल', 'Secure internal portal')}</span>
           </div>

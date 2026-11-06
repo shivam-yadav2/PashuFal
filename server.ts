@@ -9,12 +9,28 @@ import { handleApiError, BusinessError } from './src/server/errors.ts';
 import { getSiteSettings, saveSiteSettings, getSmtpSettings, saveSmtpSettings } from './src/server/db/repositories/settingsRepository.ts';
 import { notifyNewEnquiry, sendTestEmail } from './src/server/mailer.ts';
 import { startListening } from './src/server/listen.ts';
+import { requireAuth, SESSION_COOKIE_NAME, AuthenticatedRequest } from './src/server/middleware/requireAuth.ts';
+import { signSession } from './src/server/auth/session.ts';
+import { parseDurationMs } from './src/server/auth/duration.ts';
+import { verifyCredentials } from './src/server/db/repositories/authRepository.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// SESSION_SECRET (falling back to the legacy JWT_SECRET name already in
+// .env.example) signs every admin session cookie. Refuse to start rather
+// than silently run with no real protection on the admin API.
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+if (!SESSION_SECRET) {
+  console.error('[Auth] FATAL: Set SESSION_SECRET in your environment (a long random string). The admin login cannot work without it.');
+  process.exit(1);
+}
+const SESSION_TTL_MS = parseDurationMs(process.env.SESSION_EXPIRES_IN, 7 * 24 * 60 * 60 * 1000);
+const requireStaff = requireAuth(SESSION_SECRET);
 
 app.use(express.json());
 
@@ -34,6 +50,42 @@ app.get('/api/health', async (_req: Request, res: Response) => {
     version: '1.0.0',
     location: BUSINESS_CONFIG.location.displayAddress,
   });
+});
+
+// ----------------- STAFF AUTHENTICATION -----------------
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body ?? {};
+    if (!username || !password) {
+      throw new BusinessError('Enter both username and password.');
+    }
+    const admin = await verifyCredentials(String(username), String(password));
+    if (!admin) {
+      throw new BusinessError('Invalid username or password.');
+    }
+
+    const token = signSession(admin, SESSION_SECRET, SESSION_TTL_MS);
+    res.cookie(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: SESSION_TTL_MS,
+      path: '/',
+    });
+    res.json({ success: true, data: admin });
+  } catch (err: any) {
+    handleApiError(err, res);
+  }
+});
+
+app.post('/api/auth/logout', (_req: Request, res: Response) => {
+  res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+  res.json({ success: true });
+});
+
+app.get('/api/auth/me', requireStaff, (req: Request, res: Response) => {
+  const { exp, ...user } = (req as AuthenticatedRequest).user;
+  res.json({ success: true, data: user });
 });
 
 // ----------------- API ROUTES -----------------
@@ -58,7 +110,7 @@ app.get('/api/settings', async (_req: Request, res: Response) => {
   }
 });
 
-app.put('/api/settings', async (req: Request, res: Response) => {
+app.put('/api/settings', requireStaff, async (req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await saveSiteSettings(req.body ?? {}) });
   } catch (err: any) {
@@ -66,7 +118,7 @@ app.put('/api/settings', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/settings/smtp', async (_req: Request, res: Response) => {
+app.get('/api/settings/smtp', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await getSmtpSettings() });
   } catch (err: any) {
@@ -74,7 +126,7 @@ app.get('/api/settings/smtp', async (_req: Request, res: Response) => {
   }
 });
 
-app.put('/api/settings/smtp', async (req: Request, res: Response) => {
+app.put('/api/settings/smtp', requireStaff, async (req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await saveSmtpSettings(req.body ?? {}) });
   } catch (err: any) {
@@ -82,7 +134,7 @@ app.put('/api/settings/smtp', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/settings/smtp/test', async (req: Request, res: Response) => {
+app.post('/api/settings/smtp/test', requireStaff, async (req: Request, res: Response) => {
   try {
     const to = String(req.body?.to ?? '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
@@ -96,7 +148,7 @@ app.post('/api/settings/smtp/test', async (req: Request, res: Response) => {
 });
 
 // Livestock Listings
-app.get('/api/livestock', async (req: Request, res: Response) => {
+app.get('/api/livestock', requireStaff, async (req: Request, res: Response) => {
   try {
     const { species, breed, minPrice, maxPrice, status, search } = req.query;
     const animals = await db.getAnimals({
@@ -127,7 +179,7 @@ app.get('/api/livestock/public', async (_req: Request, res: Response) => {
   }
 });
 
-app.get('/api/livestock/transactions', async (_req: Request, res: Response) => {
+app.get('/api/livestock/transactions', requireStaff, async (_req: Request, res: Response) => {
   try {
     const txns = await db.getTransactions();
     res.json({ success: true, data: txns });
@@ -136,7 +188,7 @@ app.get('/api/livestock/transactions', async (_req: Request, res: Response) => {
   }
 });
 
-app.get('/api/livestock/:id', async (req: Request, res: Response) => {
+app.get('/api/livestock/:id', requireStaff, async (req: Request, res: Response) => {
   try {
     const animal = await db.getAnimalById(req.params.id);
     if (!animal) {
@@ -148,7 +200,7 @@ app.get('/api/livestock/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/livestock', async (req: Request, res: Response) => {
+app.post('/api/livestock', requireStaff, async (req: Request, res: Response) => {
   try {
     const created = await db.createAnimal(req.body, req.body.recordedBy || 'Owner');
     res.status(201).json({ success: true, data: created });
@@ -157,7 +209,7 @@ app.post('/api/livestock', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/livestock/:id', async (req: Request, res: Response) => {
+app.put('/api/livestock/:id', requireStaff, async (req: Request, res: Response) => {
   try {
     const updated = await db.updateAnimal(req.params.id, req.body, req.body.recordedBy || 'Owner');
     if (!updated) {
@@ -169,7 +221,7 @@ app.put('/api/livestock/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/livestock/:id/reserve', async (req: Request, res: Response) => {
+app.post('/api/livestock/:id/reserve', requireStaff, async (req: Request, res: Response) => {
   try {
     const { deposit, contactId, recordedBy } = req.body;
     const reserved = await db.reserveAnimal(req.params.id, deposit || 5000, contactId, recordedBy);
@@ -179,7 +231,7 @@ app.post('/api/livestock/:id/reserve', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/livestock/:id/release', async (req: Request, res: Response) => {
+app.post('/api/livestock/:id/release', requireStaff, async (req: Request, res: Response) => {
   try {
     const released = await db.releaseReservation(req.params.id, req.body.recordedBy);
     res.json({ success: true, data: released });
@@ -188,7 +240,7 @@ app.post('/api/livestock/:id/release', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/livestock/:id/sell', async (req: Request, res: Response) => {
+app.post('/api/livestock/:id/sell', requireStaff, async (req: Request, res: Response) => {
   try {
     const { buyerContactId, agreedPrice, notes, recordedBy } = req.body;
     const txn = await db.completeSale(req.params.id, buyerContactId, agreedPrice, notes, recordedBy);
@@ -199,7 +251,7 @@ app.post('/api/livestock/:id/sell', async (req: Request, res: Response) => {
 });
 
 // Contacts Directory
-app.get('/api/contacts', async (_req: Request, res: Response) => {
+app.get('/api/contacts', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getContacts() });
   } catch (err: any) {
@@ -207,7 +259,7 @@ app.get('/api/contacts', async (_req: Request, res: Response) => {
   }
 });
 
-app.post('/api/contacts', async (req: Request, res: Response) => {
+app.post('/api/contacts', requireStaff, async (req: Request, res: Response) => {
   try {
     const created = await db.createContact(req.body);
     res.status(201).json({ success: true, data: created });
@@ -217,7 +269,7 @@ app.post('/api/contacts', async (req: Request, res: Response) => {
 });
 
 // Dairy Operations
-app.get('/api/dairy/production', async (req: Request, res: Response) => {
+app.get('/api/dairy/production', requireStaff, async (req: Request, res: Response) => {
   try {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getProductionEntries(date) });
@@ -226,7 +278,7 @@ app.get('/api/dairy/production', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dairy/production', async (req: Request, res: Response) => {
+app.post('/api/dairy/production', requireStaff, async (req: Request, res: Response) => {
   try {
     const entry = await db.addProductionEntry(req.body);
     res.status(201).json({ success: true, data: entry });
@@ -235,7 +287,7 @@ app.post('/api/dairy/production', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dairy/collection', async (req: Request, res: Response) => {
+app.get('/api/dairy/collection', requireStaff, async (req: Request, res: Response) => {
   try {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getCollectionEntries(date) });
@@ -244,7 +296,7 @@ app.get('/api/dairy/collection', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dairy/collection', async (req: Request, res: Response) => {
+app.post('/api/dairy/collection', requireStaff, async (req: Request, res: Response) => {
   try {
     const entry = await db.addCollectionEntry(req.body);
     res.status(201).json({ success: true, data: entry });
@@ -253,7 +305,7 @@ app.post('/api/dairy/collection', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dairy/reconciliation', async (req: Request, res: Response) => {
+app.get('/api/dairy/reconciliation', requireStaff, async (req: Request, res: Response) => {
   try {
     const date = (req.query.date as string) || undefined;
     res.json({ success: true, data: await db.getStockReconciliation(date) });
@@ -262,7 +314,7 @@ app.get('/api/dairy/reconciliation', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dairy/movements', async (req: Request, res: Response) => {
+app.get('/api/dairy/movements', requireStaff, async (req: Request, res: Response) => {
   try {
     const date = req.query.date as string | undefined;
     res.json({ success: true, data: await db.getInventoryMovements(date) });
@@ -271,7 +323,7 @@ app.get('/api/dairy/movements', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dairy/subscriptions', async (_req: Request, res: Response) => {
+app.get('/api/dairy/subscriptions', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getSubscriptions() });
   } catch (err: any) {
@@ -279,7 +331,7 @@ app.get('/api/dairy/subscriptions', async (_req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dairy/subscriptions', async (req: Request, res: Response) => {
+app.post('/api/dairy/subscriptions', requireStaff, async (req: Request, res: Response) => {
   try {
     const sub = await db.createSubscription(req.body);
     res.status(201).json({ success: true, data: sub });
@@ -288,7 +340,7 @@ app.post('/api/dairy/subscriptions', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dairy/deliveries', async (req: Request, res: Response) => {
+app.get('/api/dairy/deliveries', requireStaff, async (req: Request, res: Response) => {
   try {
     const date = (req.query.date as string) || undefined;
     res.json({ success: true, data: await db.getDeliveries(date) });
@@ -297,7 +349,7 @@ app.get('/api/dairy/deliveries', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dairy/deliveries/generate', async (req: Request, res: Response) => {
+app.post('/api/dairy/deliveries/generate', requireStaff, async (req: Request, res: Response) => {
   try {
     const { date, shift, recordedBy } = req.body;
     const deliveries = await db.generateDailyDeliveries(date, shift, recordedBy);
@@ -307,7 +359,7 @@ app.post('/api/dairy/deliveries/generate', async (req: Request, res: Response) =
   }
 });
 
-app.patch('/api/dairy/deliveries/:id/status', async (req: Request, res: Response) => {
+app.patch('/api/dairy/deliveries/:id/status', requireStaff, async (req: Request, res: Response) => {
   try {
     const { status, actualLitres, skipReason, recordedBy } = req.body;
     const updated = await db.updateDeliveryStatus(req.params.id, status, actualLitres, skipReason, recordedBy);
@@ -321,7 +373,7 @@ app.patch('/api/dairy/deliveries/:id/status', async (req: Request, res: Response
 });
 
 // Financials & Audit
-app.get('/api/finance/summary', async (_req: Request, res: Response) => {
+app.get('/api/finance/summary', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getFinancialSummary() });
   } catch (err: any) {
@@ -329,7 +381,7 @@ app.get('/api/finance/summary', async (_req: Request, res: Response) => {
   }
 });
 
-app.get('/api/finance/payments', async (_req: Request, res: Response) => {
+app.get('/api/finance/payments', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getPayments() });
   } catch (err: any) {
@@ -337,7 +389,7 @@ app.get('/api/finance/payments', async (_req: Request, res: Response) => {
   }
 });
 
-app.post('/api/finance/payments', async (req: Request, res: Response) => {
+app.post('/api/finance/payments', requireStaff, async (req: Request, res: Response) => {
   try {
     const payment = await db.addPayment(req.body);
     res.status(201).json({ success: true, data: payment });
@@ -346,7 +398,7 @@ app.post('/api/finance/payments', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/audit', async (_req: Request, res: Response) => {
+app.get('/api/audit', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getAuditLogs() });
   } catch (err: any) {
@@ -355,7 +407,7 @@ app.get('/api/audit', async (_req: Request, res: Response) => {
 });
 
 // ----------------- PRD ENQUIRIES & ORDERS -----------------
-app.get('/api/enquiries', async (req: Request, res: Response) => {
+app.get('/api/enquiries', requireStaff, async (req: Request, res: Response) => {
   try {
     const status = req.query.status as string | undefined;
     res.json({ success: true, data: await db.getEnquiries(status) });
@@ -364,7 +416,7 @@ app.get('/api/enquiries', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/enquiries/:id', async (req: Request, res: Response) => {
+app.get('/api/enquiries/:id', requireStaff, async (req: Request, res: Response) => {
   try {
     const enquiry = await db.getEnquiryById(req.params.id);
     if (!enquiry) {
@@ -386,7 +438,7 @@ app.post('/api/enquiries', async (req: Request, res: Response) => {
   }
 });
 
-app.patch('/api/enquiries/:id/status', async (req: Request, res: Response) => {
+app.patch('/api/enquiries/:id/status', requireStaff, async (req: Request, res: Response) => {
   try {
     const { status, quotationNotes, quotationAmount, transportQuotation, assignedStaff } = req.body;
     const updated = await db.updateEnquiryStatus(
@@ -406,7 +458,7 @@ app.patch('/api/enquiries/:id/status', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/orders', async (_req: Request, res: Response) => {
+app.get('/api/orders', requireStaff, async (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: await db.getOrders() });
   } catch (err: any) {
@@ -414,7 +466,7 @@ app.get('/api/orders', async (_req: Request, res: Response) => {
   }
 });
 
-app.post('/api/orders', async (req: Request, res: Response) => {
+app.post('/api/orders', requireStaff, async (req: Request, res: Response) => {
   try {
     const created = await db.createOrder(req.body);
     res.status(201).json({ success: true, data: created });
@@ -423,7 +475,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
   }
 });
 
-app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
+app.patch('/api/orders/:id/status', requireStaff, async (req: Request, res: Response) => {
   try {
     const { status, deliveryStatus, transporterDetails } = req.body;
     const updated = await db.updateOrderStatus(req.params.id, status, deliveryStatus, transporterDetails);
@@ -439,8 +491,6 @@ app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
 // ----------------- VITE & STATIC SERVING -----------------
 
 async function startServer() {
-  const isProduction = process.env.NODE_ENV === 'production';
-
   const connected = await testMySQLConnection();
   if (!connected) {
     console.error('[Database] FATAL: Could not connect to MySQL. Check MYSQL_HOST/PORT/USER/PASSWORD/DATABASE in .env. Server will not start without a working database.');

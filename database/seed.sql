@@ -102,10 +102,10 @@ INSERT INTO payments (
 ('PAY-20261026-01', 'CUSTOMER_RECEIPT', 'CONT-005', 15000.00, 'INR', 'UPI', '2026-10-26', 'UPI/261026/990142', 'Weekly milk settlement', 'POSTED', 'Parmeshwar Kushwaha'),
 ('PAY-20261026-02', 'SUPPLIER_PAYMENT', 'CONT-001', 12000.00, 'INR', 'BANK_TRANSFER', '2026-10-26', 'NEFT/UBIN/881023', 'Supplier milk payout', 'POSTED', 'Parmeshwar Kushwaha');
 
--- 12. Default Admin Users
--- Default login: username: admin / password: password123 (use bcrypt hash in production)
-INSERT INTO admin_users (id, username, password_hash, full_name, role, phone, is_active) VALUES
-('ADM-001', 'admin', '$2b$10$wK1W0hY0Qd6V3Y8yZzJvse1H1vM5f1oFwGqZk5yC6L3mN2pQ4rX7e', 'Parmeshwar Kushwaha', 'OWNER', '+91 97928 20684', TRUE),
-('ADM-002', 'manager', '$2b$10$wK1W0hY0Qd6V3Y8yZzJvse1H1vM5f1oFwGqZk5yC6L3mN2pQ4rX7e', 'Farm Operations Manager', 'MANAGER', '+91 98380 00000', TRUE);
+-- 12. Admin Users
+-- No default accounts are seeded — a hardcoded shipped password is a
+-- vulnerability, not a convenience. Create your own login after loading
+-- this file:
+--   node scripts/create-admin.mjs --username owner --password "<a strong password>" --name "Your Name" --role OWNER --phone "9999999999"
 
 SET FOREIGN_KEY_CHECKS = 1;

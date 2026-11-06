@@ -17,6 +17,7 @@ import {
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -24,6 +25,20 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
   if (!data.success) throw new Error(data.error || `Request failed (${res.status})`);
   return data.data as T;
 }
+
+export interface AuthUserView {
+  id: string;
+  username: string;
+  fullName: string;
+  role: 'OWNER' | 'MANAGER';
+  phone: string;
+}
+
+export const authApi = {
+  login: (username: string, password: string) => send<AuthUserView>('/api/auth/login', 'POST', { username, password }),
+  logout: () => send<void>('/api/auth/logout', 'POST'),
+  me: () => send<AuthUserView>('/api/auth/me', 'GET'),
+};
 
 export const settingsApi = {
   getSite: () => send<import('../config/business').BusinessConfig>('/api/settings', 'GET'),
