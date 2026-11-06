@@ -104,9 +104,13 @@ purvanchal-dairy/
 │   │   └── public/              # HomePage, CattleCatalog, BulkOrder, Transport, Contact
 │   │
 │   ├── server/
+│   │   ├── auth/                # Password hashing, session tokens
 │   │   ├── db/
-│   │   │   └── mysql.ts         # MySQL connection pool with auto-fallback
-│   │   └── mockDb.ts            # Resilient in-memory fallback store
+│   │   │   ├── mysql.ts         # MySQL connection pool
+│   │   │   └── repositories/    # One module per domain area (animals, dairy, finance, ...)
+│   │   ├── middleware/
+│   │   │   └── requireAuth.ts   # Protects admin API routes
+│   │   └── mailer.ts            # SMTP enquiry notifications
 │   │
 │   ├── services/
 │   │   └── api.ts               # Client-side API fetch client
@@ -244,13 +248,19 @@ The integration test suite (`npm test`) runs against a **separate** MySQL databa
 
 ---
 
-## 🔑 Default Admin Credentials
+## 🔑 Admin Login
 
-To access the Admin Portal (`/admin`):
-- **URL**: Navigate to **Admin Panel** via the top navigation bar or footer.
-- **Default Username**: `admin`
-- **Default Password**: `password123`
-- **Owner Role**: Full access to Livestock, Enquiries, Orders, Daily Milk Logging, Subscriptions, and Financials.
+No default account ships with the app — a hardcoded shipped password is a
+vulnerability, not a convenience. Create your own login after the database
+is seeded:
+
+```bash
+npm run create-admin -- --username owner --password "a-strong-password" --name "Your Name" --role OWNER --phone "9999999999"
+```
+
+Run it again with the same `--username` any time to reset that user's
+password. `--role` is `OWNER` or `MANAGER`. Then sign in from **Admin Panel**
+in the top navigation or footer.
 
 ---
 
@@ -276,34 +286,30 @@ To access the Admin Portal (`/admin`):
 | `GET` | `/api/dairy/reconciliation` | Daily stock balance & variance calculation |
 | `GET` | `/api/dairy/subscriptions` | Doorstep milk delivery subscriptions |
 | `GET` | `/api/finance/summary` | Net cash flow, receivables & payables |
+| `POST` | `/api/auth/login` | Staff sign-in, sets the session cookie |
+| `GET` | `/api/auth/me` | Current signed-in user |
+| `GET`/`PUT` | `/api/settings` | Admin-editable business info & homepage content |
+| `GET`/`PUT` | `/api/settings/smtp` | Email (SMTP) configuration |
+
+All routes above except `/api/health`, `/api/business`, `/api/settings` (GET),
+`/api/livestock/public`, `POST /api/enquiries`, and `/api/auth/*` require a
+signed-in session — see [Admin Login](#-admin-login).
 
 ---
 
 ## 📦 Production Build & Deployment
 
-### Build for Production
 ```bash
-npm run build
+npm run build   # client (dist/) + server bundle (dist-server/server.mjs)
+npm start       # runs dist-server/server.mjs directly — no tsx needed
 ```
-This generates the optimized client bundle in the `/dist` folder.
 
-### Run in Production Mode
-```bash
-npm start
-```
-`server.ts` will serve the optimized production static files and mount the Express API routes.
-
-### Production Deployment Options
-- **Docker**: Containerize the app using Node.js 20 Alpine and run alongside a MySQL container.
-- **PM2 on VPS (Ubuntu/Debian)**:
-  ```bash
-  npm run build
-  pm2 start server.ts --name "purvanchal-dairy" --interpreter tsx
-  pm2 save
-  pm2 startup
-  ```
-- **Nginx Reverse Proxy**:
-  Configure Nginx to reverse proxy port `80/443` to `http://localhost:3000` with SSL via Let's Encrypt.
+For deploying to shared hosting with cPanel's Node.js Selector (the
+supported path for this project), see **[DEPLOYMENT.md](DEPLOYMENT.md)** —
+it covers the database, environment variables, the cPanel Node App setup,
+and updating a live deployment. For any other host (VPS, Docker, etc.), the
+same build output works: run `dist-server/server.mjs` with Node 18+, behind
+a reverse proxy for TLS.
 
 ---
 

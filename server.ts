@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
+import helmet from 'helmet';
 import http from 'http';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { db } from './src/server/db/repositories/index.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
 import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
@@ -14,8 +14,13 @@ import { signSession } from './src/server/auth/session.ts';
 import { parseDurationMs } from './src/server/auth/duration.ts';
 import { verifyCredentials } from './src/server/db/repositories/authRepository.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolved from the working directory, not import.meta.url — the production
+// build (dist-server/server.mjs) lives in a different folder than the
+// project root, but is always run with cwd set to the project root (true
+// both locally and on cPanel's Node App, which sets cwd to "Application
+// root"). That's what makes `dist/` (the client build) resolve correctly
+// either way.
+const projectRoot = process.cwd();
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -31,6 +36,16 @@ if (!SESSION_SECRET) {
 }
 const SESSION_TTL_MS = parseDurationMs(process.env.SESSION_EXPIRES_IN, 7 * 24 * 60 * 60 * 1000);
 const requireStaff = requireAuth(SESSION_SECRET);
+
+// cPanel's Node Selector runs this app behind Apache, which terminates SSL
+// and proxies plain HTTP to Node — trust proxy so Express reads the real
+// client IP/protocol from X-Forwarded-* instead of the proxy's own.
+app.set('trust proxy', 1);
+
+// Baseline security headers (clickjacking, MIME-sniffing, etc.). CSP is left
+// off: this site loads Google Fonts and animal photos from Unsplash, and
+// helmet's default CSP would block both without extra tuning.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(express.json());
 
@@ -514,9 +529,9 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    app.use(express.static(path.resolve(projectRoot, 'dist')));
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.resolve(projectRoot, 'dist', 'index.html'));
     });
   }
 
