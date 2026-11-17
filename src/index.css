@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --build-cache-bust: 2;
+}
+
 @theme {
   --font-sans: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Fraunces', Georgia, 'Noto Serif Devanagari', serif;

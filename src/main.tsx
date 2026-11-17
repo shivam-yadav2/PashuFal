@@ -1,3 +1,5 @@
+// build-cache-bust: forces a new content hash so a stuck host-side cache
+// can't keep serving an old build under the previous asset filename.
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { applySettings, BUSINESS_CONFIG } from './config/business';

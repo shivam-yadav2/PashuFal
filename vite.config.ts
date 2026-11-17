@@ -5,6 +5,11 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // The production deployment is mounted at the /pashufal subdirectory
+    // (cPanel Passenger strips that prefix before forwarding to this app),
+    // so built asset URLs need the same prefix or they resolve to the
+    // domain root and 404.
+    base: '/pashufal/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

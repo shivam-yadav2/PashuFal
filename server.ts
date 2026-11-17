@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import helmet from 'helmet';
 import http from 'http';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from './src/server/db/repositories/index.ts';
 import { BUSINESS_CONFIG } from './src/config/business.ts';
 import { testMySQLConnection, isMySQLEnabled, getMySQLConfig } from './src/server/db/mysql.ts';
@@ -13,14 +14,6 @@ import { requireAuth, SESSION_COOKIE_NAME, AuthenticatedRequest } from './src/se
 import { signSession } from './src/server/auth/session.ts';
 import { parseDurationMs } from './src/server/auth/duration.ts';
 import { verifyCredentials } from './src/server/db/repositories/authRepository.ts';
-
-// Resolved from the working directory, not import.meta.url — the production
-// build (dist-server/server.mjs) lives in a different folder than the
-// project root, but is always run with cwd set to the project root (true
-// both locally and on cPanel's Node App, which sets cwd to "Application
-// root"). That's what makes `dist/` (the client build) resolve correctly
-// either way.
-const projectRoot = process.cwd();
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -529,6 +522,13 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    // Resolved from this file's own location, not process.cwd() — some hosts'
+    // Node app managers (confirmed: LiteSpeed's) don't reliably launch the
+    // process with cwd set to the app root, which silently broke static
+    // file serving in production. The bundle always lives at
+    // "<project root>/dist-server/server.mjs", so going up one directory
+    // from it is always the project root, regardless of launch cwd.
+    const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
     app.use(express.static(path.resolve(projectRoot, 'dist')));
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.resolve(projectRoot, 'dist', 'index.html'));
