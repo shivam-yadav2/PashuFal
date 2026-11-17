@@ -35,6 +35,24 @@ const requireStaff = requireAuth(SESSION_SECRET);
 // client IP/protocol from X-Forwarded-* instead of the proxy's own.
 app.set('trust proxy', 1);
 
+// A cPanel Node.js application mounted at a sub-URL is proxied differently
+// by different Passenger/LiteSpeed versions. Some remove `/pashufal` before
+// forwarding the request to Node, while others leave it intact. In the latter
+// case Express would look for `dist/pashufal/assets/...` instead of
+// `dist/assets/...`, miss the file, and our SPA fallback would return
+// index.html with a `text/html` MIME type for JS/CSS requests.
+//
+// Normalize the forwarded URL so both behaviours work. This also makes API
+// requests produced by the Vite build (`/pashufal/api/...`) reach the normal
+// `/api/...` handlers below.
+const DEPLOYMENT_BASE_PATH = '/pashufal';
+app.use((req, _res, next) => {
+  if (req.url === DEPLOYMENT_BASE_PATH || req.url.startsWith(`${DEPLOYMENT_BASE_PATH}/`)) {
+    req.url = req.url.slice(DEPLOYMENT_BASE_PATH.length) || '/';
+  }
+  next();
+});
+
 // Baseline security headers (clickjacking, MIME-sniffing, etc.). CSP is left
 // off: this site loads Google Fonts and animal photos from Unsplash, and
 // helmet's default CSP would block both without extra tuning.

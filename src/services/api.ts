@@ -14,6 +14,21 @@ import {
   LivestockOrder
 } from '../types/domain';
 
+// Vite rewrites asset URLs using `base`, but it deliberately does not
+// rewrite absolute fetch URLs. Keep API calls beneath the same deployment
+// path as the application: `/api/...` locally and `/pashufal/api/...` on
+// the cPanel deployment.
+const nativeFetch = globalThis.fetch.bind(globalThis);
+function fetch(
+  input: Parameters<typeof globalThis.fetch>[0],
+  init?: Parameters<typeof globalThis.fetch>[1],
+) {
+  const url = typeof input === 'string' && input.startsWith('/api/')
+    ? `${import.meta.env.BASE_URL.replace(/\/$/, '')}${input}`
+    : input;
+  return nativeFetch(url, init);
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
